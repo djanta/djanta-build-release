@@ -29,6 +29,7 @@
         </server>
     </servers>
 
+    <!--
     <profiles>
         <profile>
             <id>sonatype</id>
@@ -40,5 +41,6 @@
             </properties>
         </profile>
     </profiles>
+    -->
 
 </settings>
