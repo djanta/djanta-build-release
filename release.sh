@@ -1,41 +1,272 @@
 #!/usr/bin/env bash
 
 #
-# Copyright 2015-2019 - The djanta.io Authors
+# Copyright 2019 DJANTA, LLC (https://www.djanta.io)
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
-# in compliance with the License. You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software distributed under the License
-# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-# or implied. See the License for the specific language governing permissions and limitations under
-# the License.
+#   Unless required by applicable law or agreed toMap in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 #
 
-function increment() {
+source ./common.sh
+
+if [ "$#" -eq 0 ] &&  [ ! -f ".variables" ]; then
+  error_exit "Insuffisant command argument"
+fi
+
+# Load the project given .variables file if any
+if [ -f ".variables" ]; then
+  colored --blue "Exporting .variables file ..."
+  export_properties .variables
+fi
+
+# Load the pom version
+[ -f "pom.xml" ] && version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'` || \
+    version="0.0.1-SNAPSHOT" # Set the default pom version to "0.0.1-SNAPSHOT"
+
+#echo "[*] Version: ${version}"
+
+increment() {
   local version=$1
   result=`echo ${version} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`
   echo "${result}-SNAPSHOT"
 }
 
-# extract the release version from the pom file
-version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-tag=`echo ${version} | cut -d'-' -f 1`
+#pom_version() {
+#  if [[ -f "pom.xl" ]]; then
+#    version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+#    return version
+#  else
+#    #return "0.0.1-SNAPSHOT" # default version hand crafted
+#    return ""
+#  fi;
+#}
 
-# determine the next snapshot version
-snapshot=$(increment ${tag})
+release() {
+  colored --white "[Release] Releasing generic version style ..."
 
-echo "release version is: ${tag} and next snapshot is: ${snapshot}"
+  argv intag '--tag' ${@:1:$#}
+  argv insnapshot '--snapshot' ${@:1:$#}
+  argv inlabel '--tag-label' ${@:1:$#}
 
-# Update the versions, removing the snapshots, then create a new tag for the release, this will
-# start the travis-ci release process.
-./mvnw -B versions:set scm:checkin -DremoveSnapshot -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
+  colored --green "[Release] In label=${inlabel}"
 
-# tag the release
-echo "pushing tag ${tag}"
-./mvnw scm:tag
+  [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot=''
+  [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
+  [[ ! -z "$inlabel" ]] && label="-Dtag=\"${inlabel}-${tag}\"" || label=''
 
-# Update the versions to the next snapshot
-./mvnw -B versions:set scm:checkin -DnewVersion="${snapshot}" -DgenerateBackupPoms=false -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+  ## Version argument declaration ...
+  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=\"${snapshot}"\" || snapshot_argv=''
+  [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
+
+  colored --green "[Release] Tag=${tag}"
+  colored --green "[Release] Label=${label}"
+  colored --green "[Release] Snapshot=${insnapshot}"
+  colored --green "[Release] Snapshot Label=${snapshot_argv}"
+  colored --green "[Release] Tag Label=${tag_argv}"
+
+  # Update the versions, removing the snapshots, then create a new tag for the release, this will
+  # start the travis-ci release process.
+#  ./mvnw -B versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" \
+#    -DpushChanges=false
+
+  # tag the release
+#  echo "pushing tag ${tag}"
+#  ./mvnw "${label}" scm:tag
+
+  # Update the versions to the next snapshot
+ # ./mvnw -B versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
+ #     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+}
+
+# Incremental versioning
+api_version() {
+  # extract the release version from the pom file
+  version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+  tag=`echo ${version} | cut -d'-' -f 1`
+
+  # determine the next snapshot version
+#  snapshot=$(increment ${tag})
+
+  argv inlabel '--label' ${@:1:$#}
+  argv inpatch '--patch' ${@:1:$#}
+  argv insnapshot '--next-snapshot' ${@:1:$#}
+
+  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
+
+  echo "release version is: ${tag} and next snapshot is: ${snapshot}"
+
+  # Update the versions, removing the snapshots, then create a new tag for the release, this will
+  # start the travis-ci release process.
+#  ./mvnw -B versions:set scm:checkin -DremoveSnapshot -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" \
+#    -DpushChanges=false
+
+  # tag the release
+#  echo "pushing tag ${tag}"
+#  ./mvnw scm:tag
+
+  # Update the versions to the next snapshot
+#  ./mvnw -B versions:set scm:checkin -DnewVersion="${snapshot}" -DgenerateBackupPoms=false \
+#      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+
+  release --tag="${tag}" --tag-label="${inlabel:-}" --snapshot="${snapshot}"
+}
+
+#Date based versioning
+ts_version() {
+  colored --blue "[timestamp] Building version basee release"
+
+  argv fulldate '--full-date' ${@:1:$#}
+  argv informat '--format' ${@:1:$#}
+
+  argv inday '--day' ${@:1:$#}
+  argv inmonth '--month' ${@:1:$#}
+  argv inyear '--year' ${@:1:$#}
+
+  argv inlabel '--label' ${@:1:$#}
+  argv seperator '--separator' ${@:1:$#}
+  argv inpatch '--patch' ${@:1:$#}
+
+  exists is_incremental '--continue-snapshot' ${@:1:$#}
+  argv insnapshot '--next-snapshot' ${@:1:$#}
+
+  [ ! -z "$NEXT_RELEASE" ] && nextrelease="$NEXT_RELEASE" || nextrelease=$(date +'%y.%m.%d')
+
+  colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
+  colored --yellow "[WARN] Next Release: ${nextrelease}"
+
+  [ ! -z "$informat" ] && format="$informat" || format='%y.%m.%d'
+  [ ! -z "$fulldate" ] && now=$(date -j -f "${format}" "$fulldate" +"${format}") || now="$nextrelease"
+  [ ! -z "$inday" ] && d="$inday" || d="$(date -j -f "${format}" "$now" '+%d')"
+  [ ! -z "$inmonth" ] && m="$inmonth" || m="$(date -j -f "${format}" "$now" '+%m')"
+  [ ! -z "$inyear" ] && y="$inyear" || y="$(date -j -f "${format}" "$now" '+%y')"
+
+  local sep="${seperator:-.}"
+  local all="${y}${sep}${m}${sep}${d}"
+
+  [ ! -z "$inpatch" ] && tag="${all}-${inpatch}" || tag="$all"
+
+  colored --yellow "Continue snapshot: ${is_incremental}"
+
+  ##
+  # IF '--continue-snapshot' was passed need to increment the snapshot version from the existing pom file
+  ##
+  if [ is_incremental ] && [ -f "pom.xml" ] && [ -f "mvnw" ]; then
+    echo "================="
+  fi
+
+  colored --green "[timestamp] Generated version: ${tag}"
+
+  #release --tag="${tag}" --tag-label="${inlabel:-}" --snapshot="${insnapshot:-}"
+}
+
+help_message () {
+  #$(usage "${@:1:$#}")
+  cat <<-EOF
+  $PROGNAME
+  This script will be use to tag your maven project with two type versioning style.
+  #./release timestamp [--format=.., --full-date=..[[--year.., --month=.., --day=..]], --patch]
+
+  Global:
+    --label The given expect label used to tag the released version (release|tag|rc), etc...
+    --next-snapshot Define this option (no matter the value) to indicate the ongoing snapshot version
+    --patch Use this option to define the current patching version stage
+
+  Options:
+  -h, --help [(timestamp|ts) | (increment|api) ] Display this help message within the given command and exit.
+  --timestamp [timestamp | -- ts | ts]: Release the current project based on timestamp format (e.g: $(date +'%y.%m.%d'))
+  --increment [increment | --api | api]: Release the current project, by continueing the current version.
+
+  $(usage "${1}")
+EOF
+  return
+}
+
+usage() {
+  for i in ${@}; do
+    #colored --green "Command arugment: ${i}"
+#    case ${i} in
+#      --long-help)
+#      LONGHELP="1"
+#      ;;
+#    esac
+
+    case ${i} in
+      ts|timestamp)
+cat <<-EOF
+Timestamp base version release:
+
+  $PROGNAME ${i} [--format=.., --full-date=..[[--year.., --month=.., --day=..]], --patch]
+  --format Define the given date format. Otherwise, the default value is set to: %y.%m.%d
+  --full-date Define the manual or initial date value. The default value will be set to: $(date +'%y.%m.%d')
+  --day Manually override the given version date
+  --month Manually override the given version year
+
+EOF
+        ;;
+      api|increment)
+cat <<-EOF
+ddsdsf
+EOF
+     ;;
+    esac
+  done
+
+#  for ACTIONS in "${@}"; do
+#    case ${ACTIONS} in
+#      "${MAIN_USAGE}")
+#        cecho --yellow "Main options"
+#        ;;
+#    esac
+#
+#    for i in ${ACTIONS}; do
+#      buf="" addhelp=""
+#      case ${i} in
+#        usage)
+#            help_header "" "[-h | --help "
+#            help_content "      print this help, print advanced options and additional descriptions"
+#            ;;
+#        -a=*|--action=*)
+#            help_header ${i} "[action type]"
+#            help_content "\texecute the specific action provided by the use. At this point of the implementation,\n
+#                \tthe available actions are:tools or orchestration"
+#            ;;
+#      esac
+#    done
+#  done
+}
+
+XCMD="${1}"
+case ${XCMD} in
+  -h|--help)
+    help_message ${@:2:$#}
+    graceful_exit ${?}
+    ;;
+  timestamp|ts|--timestamp|--ts)
+    XCMD="ts_version"
+    ;;
+  api|--api|--increment|increment)
+    XCMD="api_version"
+    ;;
+esac
+
+[ -n "${XCMD}" ] && stype="${XCMD}" || stype="${RELEASE_STYLE}"
+
+if [ -n "${stype}" ]; then
+  ${stype} ${@:2:$#}
+  graceful_exit ${?}
+else
+  graceful_exit
+fi
+
+# Trap signals
+trap "signal_exit TERM" TERM HUP
+trap "signal_exit INT" INT
