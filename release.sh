@@ -16,7 +16,9 @@
 #   limitations under the License.
 #
 
-source ./common.sh
+cwd=$([[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}")
+
+source ${cwd}/common.sh
 
 if [ "$#" -eq 0 ] &&  [ ! -f ".variables" ]; then
   error_exit "Insuffisant command argument"
