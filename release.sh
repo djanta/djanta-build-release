@@ -29,12 +29,12 @@ if [ -f ".variables" ]; then
 fi
 
 # Load the pom version
-[ -f "pom.xml" ] && version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'` || \
-    version="0.0.1-SNAPSHOT" # Set the default pom version to "0.0.1-SNAPSHOT"
+#[ -f "pom.xml" ] && version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'` || \
+#    version="0.0.1-SNAPSHOT" # Set the default pom version to "0.0.1-SNAPSHOT"
 
 #echo "[*] Version: ${version}"
 
-increment() {
+snapshot() {
   local version=$1
   result=`echo ${version} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`
   echo "${result}-SNAPSHOT"
@@ -51,11 +51,11 @@ increment() {
 #}
 
 release() {
-  colored --white "[Release] Releasing generic version style ..."
+  #colored --white "[Release] Releasing generic version style ..."
 
   argv intag '--tag' ${@:1:$#}
   argv insnapshot '--snapshot' ${@:1:$#}
-  argv inlabel '--tag-label' ${@:1:$#}
+  argv inlabel '--tag-prefix' ${@:1:$#}
 
   colored --green "[Release] In label=${inlabel}"
 
@@ -94,13 +94,13 @@ api_version() {
   tag=`echo ${version} | cut -d'-' -f 1`
 
   # determine the next snapshot version
-#  snapshot=$(increment ${tag})
+#  snapshot=$(snapshot ${tag})
 
   argv inlabel '--label' ${@:1:$#}
   argv inpatch '--patch' ${@:1:$#}
   argv insnapshot '--next-snapshot' ${@:1:$#}
 
-  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
+  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(snapshot ${tag})
 
   echo "release version is: ${tag} and next snapshot is: ${snapshot}"
 
@@ -117,7 +117,7 @@ api_version() {
 #  ./mvnw -B versions:set scm:checkin -DnewVersion="${snapshot}" -DgenerateBackupPoms=false \
 #      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
-  release --tag="${tag}" --tag-label="${inlabel:-}" --snapshot="${snapshot}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-}" --snapshot="${snapshot}"
 }
 
 #Date based versioning
@@ -136,12 +136,9 @@ ts_version() {
   argv inpatch '--patch' ${@:1:$#}
 
   exists is_incremental '--continue-snapshot' ${@:1:$#}
-  argv insnapshot '--next-snapshot' ${@:1:$#}
+  argv innextsnapshot '--next-snapshot' ${@:1:$#}
 
   [ ! -z "$NEXT_RELEASE" ] && nextrelease="$NEXT_RELEASE" || nextrelease=$(date +'%y.%m.%d')
-
-  colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
-  colored --yellow "[WARN] Next Release: ${nextrelease}"
 
   [ ! -z "$informat" ] && format="$informat" || format='%y.%m.%d'
   [ ! -z "$fulldate" ] && now=$(date -j -f "${format}" "$fulldate" +"${format}") || now="$nextrelease"
@@ -150,22 +147,35 @@ ts_version() {
   [ ! -z "$inyear" ] && y="$inyear" || y="$(date -j -f "${format}" "$now" '+%y')"
 
   local sep="${seperator:-.}"
-  local all="${y}${sep}${m}${sep}${d}"
+  local ver="${y}${sep}${m}${sep}${d}"
 
-  [ ! -z "$inpatch" ] && tag="${all}-${inpatch}" || tag="$all"
-
-  colored --yellow "Continue snapshot: ${is_incremental}"
+  [ ! -z "$inpatch" ] && tag="${ver}-${inpatch}" || tag="$ver"
 
   ##
   # IF '--continue-snapshot' was passed need to increment the snapshot version from the existing pom file
   ##
-  if [ is_incremental ] && [ -f "pom.xml" ] && [ -f "mvnw" ]; then
-    echo "================="
+  if [ -z "$innextsnapshot" ] || ([ is_incremental ] && [ -f "pom.xml" ] && [ -f "mvnw" ]); then
+    pversion=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+    snapshot=$(snapshot ${pversion})
+
+    colored --white "[INFO] POM Version: ${pversion}"
+    colored --white "[INFO] Next snapshot: ${snapshot}"
+  else
+    [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" \
+        || snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
   fi
 
+  colored --yellow "Continue snapshot: ${is_incremental}"
+  colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
+  colored --yellow "[WARN] Next Release: ${nextrelease}"
+  colored --yellow "[WARN] Next Snapshot: ${snapshot}"
   colored --green "[timestamp] Generated version: ${tag}"
 
-  #release --tag="${tag}" --tag-label="${inlabel:-}" --snapshot="${insnapshot:-}"
+  #nextday=$(date -v +1d)
+  #nextday=$(date '+%d')
+  #colored --white "[INFO] Next Day based snapshot: ${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
+
+  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}"
 }
 
 help_message () {
@@ -214,40 +224,24 @@ EOF
         ;;
       api|increment)
 cat <<-EOF
-ddsdsf
+//FIXME: NYI
 EOF
      ;;
     esac
   done
-
-#  for ACTIONS in "${@}"; do
-#    case ${ACTIONS} in
-#      "${MAIN_USAGE}")
-#        cecho --yellow "Main options"
-#        ;;
-#    esac
-#
-#    for i in ${ACTIONS}; do
-#      buf="" addhelp=""
-#      case ${i} in
-#        usage)
-#            help_header "" "[-h | --help "
-#            help_content "      print this help, print advanced options and additional descriptions"
-#            ;;
-#        -a=*|--action=*)
-#            help_header ${i} "[action type]"
-#            help_content "\texecute the specific action provided by the use. At this point of the implementation,\n
-#                \tthe available actions are:tools or orchestration"
-#            ;;
-#      esac
-#    done
-#  done
 }
 
-XCMD="${1}"
+if [[ $1 =~ ^((--)?((timestamp|ts)|(api|increment)|(help)))$ ]]; then
+  XCMD="${1}"
+  INDEX=2
+else
+  INDEX=1
+  [ ! -z "$RELEASE_STYLE" ] && XCMD="$RELEASE_STYLE" || XCMD='--help'
+fi
+
 case ${XCMD} in
   -h|--help)
-    help_message ${@:2:$#}
+    help_message ${@:$INDEX:$#}
     graceful_exit ${?}
     ;;
   timestamp|ts|--timestamp|--ts)
@@ -258,10 +252,8 @@ case ${XCMD} in
     ;;
 esac
 
-[ -n "${XCMD}" ] && stype="${XCMD}" || stype="${RELEASE_STYLE}"
-
-if [ -n "${stype}" ]; then
-  ${stype} ${@:2:$#}
+if [ -n "${XCMD}" ]; then
+  ${XCMD} ${@:$INDEX:$#}
   graceful_exit ${?}
 else
   graceful_exit

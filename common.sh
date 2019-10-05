@@ -165,18 +165,9 @@ export_properties() {
   fi
 
   # read file line by line and populate the array. Field separator is "="
-  #declare -A arr
   while IFS='=' read -r k v; do
-    #arr["$k"]="$v"
-    colored --cyan "Exporting ${k} -> ${v}"
-    #$(export ${k}="$v")
     export "$k"="$v"
   done < ${1}
-
-#  while read LINE; do
-#   colored --cyan "Exporting $LINE"
-#    export "$LINE";
-#  done < ${1}
 }
 
 ####

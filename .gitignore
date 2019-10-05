@@ -59,3 +59,5 @@ tests
 test
 pom.xml
 **/*.variables
+mvnw
+mvnw.cmd
