@@ -21,8 +21,16 @@
 set -euo pipefail
 set -x
 
+argv0=$(echo "$0" | sed -e 's,\\,/,g')
+basedir=$(dirname "$(readlink "$0" || echo "$argv0")")
+
+case "$(uname -s)" in
+  Linux) basedir=$(dirname "$(readlink -f "$0" || echo "$argv0")");;
+  *CYGWIN*) basedir=`cygpath -w "$basedir"`;;
+esac
+
 # Load current shared labrary ...
-source ./common.sh
+source ${basedir}/common.sh
 
 build_started_by_tag() {
   if [ "${TRAVIS_TAG}" == "" ]; then

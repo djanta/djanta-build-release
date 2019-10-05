@@ -59,7 +59,6 @@ increment() {
 #}
 
 release() {
-  #colored --white "[Release] Releasing generic version style ..."
 
   argv intag '--tag' ${@:1:$#}
   argv insnapshot '--snapshot' ${@:1:$#}
@@ -93,9 +92,15 @@ release() {
   echo "pushing tag ${tag}"
   ./mvnw "${label}" scm:tag
 
+  #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
+  ./mvnw -B -X "${profile_argv},release" -nsu -DskipTests deploy
+
   # Update the versions to the next snapshot
   ./mvnw -B -X versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
       -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+
+  #FIXME: Temporally fix to manually deploy (Deploy the new snapshot)
+  ./mvnw -B -X "${profile_argv}" -nsu -DskipTests deploy
 }
 
 # Incremental versioning
@@ -185,7 +190,7 @@ ts_version() {
   colored --yellow "[WARN] Next Snapshot: ${snapshot}"
   colored --green "[timestamp] Generated version: ${tag}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-v}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
 }
 
 help_message () {
