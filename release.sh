@@ -76,7 +76,7 @@ release() {
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
   [[ ! -z "$inprofile" ]] && profile_argv="-P${inprofile}" || profile_argv=''
   [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=\"${snapshot}"\" \
-    || snapshot_argv="-DnewVersion=\"$(increment ${intag})"\"
+    || snapshot_argv="-DnewVersion=$(increment ${intag})"
 
   colored --green "[Release] Tag=${tag}"
   colored --green "[Release] Label=${label}"
