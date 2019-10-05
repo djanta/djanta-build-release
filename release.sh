@@ -73,9 +73,10 @@ release() {
   [[ ! -z "$inlabel" ]] && label="-Dtag=\"${inlabel}-${tag}\"" || label=''
 
   ## Version argument declaration ...
-  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=\"${snapshot}"\" || snapshot_argv=''
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
   [[ ! -z "$inprofile" ]] && profile_argv="-P${inprofile}" || profile_argv=''
+  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=\"${snapshot}"\" \
+    || snapshot_argv="-DnewVersion=\"$(increment ${intag})"\"
 
   colored --green "[Release] Tag=${tag}"
   colored --green "[Release] Label=${label}"
@@ -184,7 +185,7 @@ ts_version() {
   colored --yellow "[WARN] Next Snapshot: ${snapshot}"
   colored --green "[timestamp] Generated version: ${tag}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-v}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
 }
 
 help_message () {
