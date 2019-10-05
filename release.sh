@@ -16,9 +16,15 @@
 #   limitations under the License.
 #
 
-cwd=$([[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}")
+argv0=$(echo "$0" | sed -e 's,\\,/,g')
+basedir=$(dirname "$(readlink "$0" || echo "$argv0")")
 
-source ${cwd}/common.sh
+case "$(uname -s)" in
+  Linux) basedir=$(dirname "$(readlink -f "$0" || echo "$argv0")");;
+  *CYGWIN*) basedir=`cygpath -w "$basedir"`;;
+esac
+
+source ${basedir}/common.sh
 
 if [ "$#" -eq 0 ] &&  [ ! -f ".variables" ]; then
   error_exit "Insuffisant command argument"
