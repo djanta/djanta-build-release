@@ -64,6 +64,7 @@ release() {
   argv intag '--tag' ${@:1:$#}
   argv insnapshot '--snapshot' ${@:1:$#}
   argv inlabel '--tag-prefix' ${@:1:$#}
+  argv inprofile '--profile' ${@:1:$#}
 
   colored --green "[Release] In label=${inlabel}"
 
@@ -74,6 +75,7 @@ release() {
   ## Version argument declaration ...
   [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=\"${snapshot}"\" || snapshot_argv=''
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
+  [[ ! -z "$inprofile" ]] && profile_argv="-P${inprofile}" || profile_argv=''
 
   colored --green "[Release] Tag=${tag}"
   colored --green "[Release] Label=${label}"
@@ -83,16 +85,16 @@ release() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will
   # start the travis-ci release process.
-#  ./mvnw -B versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" \
-#    -DpushChanges=false
+  ./mvnw -B versions:set scm:checkin "${profile_argv}" "${tag_argv}" -DgenerateBackupPoms=false \
+    -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
-#  echo "pushing tag ${tag}"
-#  ./mvnw "${label}" scm:tag
+  echo "pushing tag ${tag}"
+  ./mvnw "${label}" scm:tag
 
   # Update the versions to the next snapshot
- # ./mvnw -B versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
- #     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+  ./mvnw -B versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
+      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 }
 
 # Incremental versioning
@@ -142,6 +144,7 @@ ts_version() {
   argv inlabel '--label' ${@:1:$#}
   argv seperator '--separator' ${@:1:$#}
   argv inpatch '--patch' ${@:1:$#}
+  argv inprofile '--profile' ${@:1:$#}
 
   exists is_incremental '--continue-snapshot' ${@:1:$#}
   argv innextsnapshot '--next-snapshot' ${@:1:$#}
@@ -181,7 +184,7 @@ ts_version() {
   colored --yellow "[WARN] Next Snapshot: ${snapshot}"
   colored --green "[timestamp] Generated version: ${tag}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-v}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
 }
 
 help_message () {
