@@ -42,7 +42,7 @@ fi
 
 #echo "[*] Version: ${version}"
 
-snapshot() {
+increment() {
   local version=$1
   result=`echo ${version} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`
   echo "${result}-SNAPSHOT"
@@ -108,7 +108,7 @@ api_version() {
   argv inpatch '--patch' ${@:1:$#}
   argv insnapshot '--next-snapshot' ${@:1:$#}
 
-  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(snapshot ${tag})
+  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
 
   echo "release version is: ${tag} and next snapshot is: ${snapshot}"
 
@@ -162,26 +162,24 @@ ts_version() {
   ##
   # IF '--continue-snapshot' was passed need to increment the snapshot version from the existing pom file
   ##
-  if [ -z "$innextsnapshot" ] || ([ is_incremental ] && [ -f "pom.xml" ] && [ -f "mvnw" ]); then
-    pversion=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-    snapshot=$(snapshot ${pversion})
+#  if [ -z "$innextsnapshot" ] || ([ is_incremental ] && [ -f "pom.xml" ] && [ -f "mvnw" ]); then
+#    pversion=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+#    snapshot=$(increment ${pversion})
+#
+#    colored --white "[INFO] POM Version: ${pversion}"
+#    colored --white "[INFO] Next snapshot: ${snapshot}"
+#  else
+#    [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" \
+#        || snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
+#  fi
 
-    colored --white "[INFO] POM Version: ${pversion}"
-    colored --white "[INFO] Next snapshot: ${snapshot}"
-  else
-    [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" \
-        || snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
-  fi
+  [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
   colored --yellow "Continue snapshot: ${is_incremental}"
   colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
   colored --yellow "[WARN] Next Release: ${nextrelease}"
   colored --yellow "[WARN] Next Snapshot: ${snapshot}"
   colored --green "[timestamp] Generated version: ${tag}"
-
-  #nextday=$(date -v +1d)
-  #nextday=$(date '+%d')
-  #colored --white "[INFO] Next Day based snapshot: ${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
   release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}"
 }
