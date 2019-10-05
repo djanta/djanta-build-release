@@ -75,7 +75,7 @@ release() {
   ## Version argument declaration ...
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
   [[ ! -z "$inprofile" ]] && profile_argv="-P${inprofile}" || profile_argv=''
-  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=\"${snapshot}"\" \
+  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" \
     || snapshot_argv="-DnewVersion=$(increment ${intag})"
 
   colored --green "[Release] Tag=${tag}"
@@ -86,7 +86,7 @@ release() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will
   # start the travis-ci release process.
-  ./mvnw -B versions:set scm:checkin "${profile_argv}" "${tag_argv}" -DgenerateBackupPoms=false \
+  ./mvnw -B -X versions:set scm:checkin "${profile_argv}" "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
@@ -94,7 +94,7 @@ release() {
   ./mvnw "${label}" scm:tag
 
   # Update the versions to the next snapshot
-  ./mvnw -B versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
+  ./mvnw -B -X versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
       -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 }
 
@@ -185,7 +185,7 @@ ts_version() {
   colored --yellow "[WARN] Next Snapshot: ${snapshot}"
   colored --green "[timestamp] Generated version: ${tag}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-v}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
 }
 
 help_message () {
