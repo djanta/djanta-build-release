@@ -82,25 +82,27 @@ release() {
   colored --green "[Release] Snapshot=${snapshot}"
   colored --green "[Release] Snapshot Label=${snapshot_argv}"
   colored --green "[Release] Tag Label=${tag_argv}"
-  colored --green "[Release] Profile=${profile_argv}"
+#  colored --green "[Release] Profile=${profile_argv}"
   colored --green "[Release] Extra Arg=${inarg}"
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will
   # start the travis-ci release process.
-  ./mvnw -B -X versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false #"${inarg}"
+  ./mvnw -B -X versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
+    -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw -B -X "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag #"${inarg}"
+  ./mvnw -B -X "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
   #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
-  ./mvnw -B -X -Plocal,-sonatype --no-snapshot-updates -DskipTests=true deploy
+  ./mvnw -B -X "${inarg}" --no-snapshot-updates -DskipTests=true deploy
 
   # Update the versions to the next snapshot
-  ./mvnw -B -X versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}" #"${inarg}"
+  ./mvnw -B -X versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
+    -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new snapshot)
-  ./mvnw -B -X -Plocal,-sonatype --no-snapshot-updates -DskipTests=true deploy
+  ./mvnw -B -X "${inarg}" --no-snapshot-updates -DskipTests=true deploy
 }
 
 # Incremental versioning
