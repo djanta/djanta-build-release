@@ -60,12 +60,13 @@ increment() {
 
 release() {
 
+  argv inarg '--arg' ${@:1:$#}
   argv intag '--tag' ${@:1:$#}
   argv insnapshot '--snapshot' ${@:1:$#}
   argv inlabel '--tag-prefix' ${@:1:$#}
   argv inprofile '--profile' ${@:1:$#}
 
-  colored --green "[Release] In label=${inlabel}"
+#  colored --green "[Release] In label=${inlabel}"
 
   [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot=''
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
@@ -77,27 +78,27 @@ release() {
   [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" \
     || snapshot_argv="-DnewVersion=$(increment ${intag})"
 
-  colored --green "[Release] Tag=${tag}"
-  colored --green "[Release] Label=${label}"
-  colored --green "[Release] Snapshot=${insnapshot}"
-  colored --green "[Release] Snapshot Label=${snapshot_argv}"
-  colored --green "[Release] Tag Label=${tag_argv}"
+#  colored --green "[Release] Tag=${tag}"
+#  colored --green "[Release] Label=${label}"
+#  colored --green "[Release] Snapshot=${insnapshot}"
+#  colored --green "[Release] Snapshot Label=${snapshot_argv}"
+#  colored --green "[Release] Tag Label=${tag_argv}"
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will
   # start the travis-ci release process.
   ./mvnw -B -X versions:set scm:checkin "${profile_argv}" "${tag_argv}" -DgenerateBackupPoms=false \
-    -Dmessage="prepare release ${tag}" -DpushChanges=false
+    -Dmessage="prepare release ${tag}" -DpushChanges=false "${inarg}"
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw "${label}" scm:tag
+  ./mvnw "${label}" scm:tag "${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
-  ./mvnw -B -X "${profile_argv},release" -nsu -DskipTests deploy
+  ./mvnw -B -X "${profile_argv}" -nsu -DskipTests deploy
 
   # Update the versions to the next snapshot
   ./mvnw -B -X versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
-      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}" "${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new snapshot)
   ./mvnw -B -X "${profile_argv}" -nsu -DskipTests deploy
@@ -115,6 +116,7 @@ api_version() {
   argv inlabel '--label' ${@:1:$#}
   argv inpatch '--patch' ${@:1:$#}
   argv insnapshot '--next-snapshot' ${@:1:$#}
+  argv invarg '--varg' ${@:1:$#}
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
 
@@ -133,7 +135,8 @@ api_version() {
 #  ./mvnw -B versions:set scm:checkin -DnewVersion="${snapshot}" -DgenerateBackupPoms=false \
 #      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-}" --snapshot="${snapshot}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" \
+    --profile="${inprofile:-}" --arg="${invarg:-}"
 }
 
 #Date based versioning
@@ -152,11 +155,11 @@ ts_version() {
   argv inpatch '--patch' ${@:1:$#}
   argv inprofile '--profile' ${@:1:$#}
 
+  argv invarg '--varg' ${@:1:$#}
   exists is_incremental '--continue-snapshot' ${@:1:$#}
   argv innextsnapshot '--next-snapshot' ${@:1:$#}
 
   [ ! -z "$NEXT_RELEASE" ] && nextrelease="$NEXT_RELEASE" || nextrelease=$(date +'%y.%m.%d')
-
   [ ! -z "$informat" ] && format="$informat" || format='%y.%m.%d'
   [ ! -z "$fulldate" ] && now=$(date -j -f "${format}" "$fulldate" +"${format}") || now="$nextrelease"
   [ ! -z "$inday" ] && d="$inday" || d="$(date -j -f "${format}" "$now" '+%d')"
@@ -184,13 +187,14 @@ ts_version() {
 
   [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
-  colored --yellow "Continue snapshot: ${is_incremental}"
-  colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
-  colored --yellow "[WARN] Next Release: ${nextrelease}"
-  colored --yellow "[WARN] Next Snapshot: ${snapshot}"
-  colored --green "[timestamp] Generated version: ${tag}"
+#  colored --yellow "Continue snapshot: ${is_incremental}"
+#  colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
+#  colored --yellow "[WARN] Next Release: ${nextrelease}"
+#  colored --yellow "[WARN] Next Snapshot: ${snapshot}"
+#  colored --green "[timestamp] Generated version: ${tag}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --profile="${inprofile:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" \
+    --profile="${inprofile:-}" --arg="${invarg:-}"
 }
 
 help_message () {
