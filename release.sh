@@ -119,6 +119,7 @@ api_version() {
   argv inpatch '--patch' ${@:1:$#}
   argv insnapshot '--next-snapshot' ${@:1:$#}
   argv invarg '--varg' ${@:1:$#}
+  argv inprofile '--profile' ${@:1:$#}
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
 
