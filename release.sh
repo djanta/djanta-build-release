@@ -66,7 +66,7 @@ release() {
   argv inlabel '--tag-prefix' ${@:1:$#}
   argv inprofile '--profile' ${@:1:$#}
 
-#  colored --green "[Release] In label=${inlabel}"
+  colored --green "[Release] In label=${inlabel}"
 
   [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot=''
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
@@ -78,11 +78,11 @@ release() {
   [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" \
     || snapshot_argv="-DnewVersion=$(increment ${intag})"
 
-#  colored --green "[Release] Tag=${tag}"
-#  colored --green "[Release] Label=${label}"
-#  colored --green "[Release] Snapshot=${insnapshot}"
-#  colored --green "[Release] Snapshot Label=${snapshot_argv}"
-#  colored --green "[Release] Tag Label=${tag_argv}"
+  colored --green "[Release] Tag=${tag}"
+  colored --green "[Release] Label=${label}"
+  colored --green "[Release] Snapshot=${insnapshot}"
+  colored --green "[Release] Snapshot Label=${snapshot_argv}"
+  colored --green "[Release] Tag Label=${tag_argv}"
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will
   # start the travis-ci release process.
