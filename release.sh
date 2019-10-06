@@ -120,21 +120,6 @@ api_version() {
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
 
-  echo "release version is: ${tag} and next snapshot is: ${snapshot}"
-
-  # Update the versions, removing the snapshots, then create a new tag for the release, this will
-  # start the travis-ci release process.
-#  ./mvnw -B versions:set scm:checkin -DremoveSnapshot -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" \
-#    -DpushChanges=false
-
-  # tag the release
-#  echo "pushing tag ${tag}"
-#  ./mvnw scm:tag
-
-  # Update the versions to the next snapshot
-#  ./mvnw -B versions:set scm:checkin -DnewVersion="${snapshot}" -DgenerateBackupPoms=false \
-#      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
-
   release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
 }
 
@@ -185,12 +170,6 @@ ts_version() {
 #  fi
 
   [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
-
-#  colored --yellow "Continue snapshot: ${is_incremental}"
-#  colored --yellow "[WARN] Exported Next Release: ${NEXT_RELEASE}"
-#  colored --yellow "[WARN] Next Release: ${nextrelease}"
-#  colored --yellow "[WARN] Next Snapshot: ${snapshot}"
-#  colored --green "[timestamp] Generated version: ${tag}"
 
   release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
 }
