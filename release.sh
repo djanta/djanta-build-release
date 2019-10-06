@@ -93,17 +93,17 @@ release() {
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw "${label}" scm:tag "${inarg}"
+  ./mvnw "${label}" scm:tag #"${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
-  ./mvnw -B -X "${profile_argv}" -nsu -DskipTests deploy
+  ./mvnw -B -X "${profile_argv}" -DskipTests deploy
 
   # Update the versions to the next snapshot
   ./mvnw -B -X versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
       -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}" "${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new snapshot)
-  ./mvnw -B -X "${profile_argv}" -nsu -DskipTests deploy
+  ./mvnw -B -X "${profile_argv}" -DskipTests deploy
 }
 
 # Incremental versioning
