@@ -91,7 +91,7 @@ release() {
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw -B -X "${label}" scm:tag #"${inarg}"
+  ./mvnw -B -X "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag #"${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
   ./mvnw -B -X "${profile_argv}" --no-snapshot-updates -DskipTests=true deploy
