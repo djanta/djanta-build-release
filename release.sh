@@ -74,9 +74,8 @@ release() {
 
   ## Version argument declaration ...
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
-  [[ ! -z "$inprofile" ]] && profile_argv="-P${inprofile}" || profile_argv=''
-  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" \
-    || snapshot_argv="-DnewVersion=$(increment ${intag})"
+  #[[ ! -z "$inprofile" ]] && profile_argv="-P${inprofile}" || profile_argv=''
+  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" || snapshot_argv="-DnewVersion=$(increment ${intag})"
 
   colored --green "[Release] Tag=${tag}"
   colored --green "[Release] Label=${label}"
@@ -88,22 +87,20 @@ release() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will
   # start the travis-ci release process.
-  ./mvnw -B versions:set scm:checkin "${profile_argv}" "${tag_argv}" -DgenerateBackupPoms=false \
-    -Dmessage="prepare release ${tag}" -DpushChanges=false "${inarg}"
+  ./mvnw -B -X versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false #"${inarg}"
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw "${label}" scm:tag #"${inarg}"
+  ./mvnw -B -X "${label}" scm:tag #"${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
-  ./mvnw -B "${profile_argv}" -DskipTests deploy
+  ./mvnw -B -X "${profile_argv}" -DskipTests deploy
 
   # Update the versions to the next snapshot
-  ./mvnw -B versions:set scm:checkin "${profile_argv}" "${snapshot_argv}" -DgenerateBackupPoms=false \
-      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}" "${inarg}"
+  ./mvnw -B -X versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}" #"${inarg}"
 
   #FIXME: Temporally fix to manually deploy (Deploy the new snapshot)
-  ./mvnw -B "${profile_argv}" -DskipTests deploy
+  ./mvnw -B -X "${profile_argv}" -DskipTests deploy
 }
 
 # Incremental versioning
@@ -138,8 +135,7 @@ api_version() {
 #  ./mvnw -B versions:set scm:checkin -DnewVersion="${snapshot}" -DgenerateBackupPoms=false \
 #      -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" \
-    --profile="${inprofile:-}" --arg="${invarg:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
 }
 
 #Date based versioning
@@ -196,8 +192,7 @@ ts_version() {
 #  colored --yellow "[WARN] Next Snapshot: ${snapshot}"
 #  colored --green "[timestamp] Generated version: ${tag}"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" \
-    --profile="${inprofile:-}" --arg="${invarg:-}"
+  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
 }
 
 help_message () {
