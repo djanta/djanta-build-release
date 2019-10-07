@@ -183,7 +183,7 @@ command_exists () {
 get_git_url() {
   #git config --get remote.${1:-origin}.url
   #git ls-remote --get-url [REMOTE]
-  return $(git remote get-url "${1:-origin}")
+  echo $(git remote get-url "${1:-origin}")
 }
 
 ##
@@ -194,6 +194,6 @@ is_tag_exists() {
     error_exit "Insuffisant command argument. At least the expected git tag name is expected."
   else
     url=$(get_git_url)
-    return $(git ls-remote --heads --tags "${url}" | grep -E "refs/(heads|tags)/${1}")
+    echo $(git ls-remote --heads --tags "${url}" | grep -E "refs/(heads|tags)/${1}")
   fi
 }
