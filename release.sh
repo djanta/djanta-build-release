@@ -70,7 +70,8 @@ release() {
 
   [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot=''
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
-  [[ ! -z "$inlabel" ]] && label="-Dtag=${inlabel}-${tag}" || label=''
+  [[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
+  [[ ! -z "$fullversion" ]] && label="-Dtag=${fullversion}" || label=''
 
   ## Version argument declaration ...
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
@@ -82,11 +83,12 @@ release() {
   colored --green "[Release] Snapshot=${snapshot}"
   colored --green "[Release] Snapshot Label=${snapshot_argv}"
   colored --green "[Release] Tag Label=${tag_argv}"
-#  colored --green "[Release] Profile=${profile_argv}"
   colored --green "[Release] Extra Arg=${inarg}"
 
-  # Update the versions, removing the snapshots, then create a new tag for the release, this will
-  # start the travis-ci release process.
+  [[ ! -z $(is_tag_exists "${fullversion}") ]] && error_exit "Following tag: ${fullversion}, has already existed."
+
+  # Update the versions, removing the snapshots, then create a new tag for the release,
+  # this will start the travis-ci release process.
   ./mvnw -B -X versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 

@@ -50,6 +50,32 @@ if [[ -n "$COLORS" ]] && [[ ! "$COLORS" =~ ^(always|yes|true|1)$ ]]; then
   unset NORMAL="\\e[0;0m"
 fi
 
+colored() {
+  while [ "$1" ]; do
+    case "$1" in
+      -normal|--normal)     color="$NORMAL" ;;
+      -black|--black)       color="\033[30;01m" ;;
+      -red|--red)           color="$RED" ;;
+      -green|--green)       color="\033[32;01m" ;;
+      -yellow|--yellow)     color="$YELLOW" ;;
+      -blue|--blue)         color="\033[34;01m" ;;
+      -magenta|--magenta)   color="\033[35;01m" ;;
+      -cyan|--cyan)         color="$CYAN" ;;
+      -white|--white)       color="\033[37;01m" ;;
+      -n)             one_line=1;   shift ; continue ;;
+      *)              echo -n "$1"; shift ; continue ;;
+    esac
+    shift
+      echo -en "$color"
+      echo -en "$1"
+      echo -en "\033[00m"
+      shift
+  done
+  if [ ! $one_line ]; then
+    echo
+  fi
+}
+
 clean_up() { # Perform pre-exit housekeeping
   return
 }
@@ -82,32 +108,6 @@ die() {
     shift
     printf "${CYAN}${@}${NORMAL}\n" 1>&2
     exit ${ret}
-}
-
-colored() {
-  while [ "$1" ]; do
-    case "$1" in
-      -normal|--normal)     color="$NORMAL" ;;
-      -black|--black)       color="\033[30;01m" ;;
-      -red|--red)           color="$RED" ;;
-      -green|--green)       color="\033[32;01m" ;;
-      -yellow|--yellow)     color="$YELLOW" ;;
-      -blue|--blue)         color="\033[34;01m" ;;
-      -magenta|--magenta)   color="\033[35;01m" ;;
-      -cyan|--cyan)         color="$CYAN" ;;
-      -white|--white)       color="\033[37;01m" ;;
-      -n)             one_line=1;   shift ; continue ;;
-      *)              echo -n "$1"; shift ; continue ;;
-    esac
-    shift
-      echo -en "$color"
-      echo -en "$1"
-      echo -en "\033[00m"
-      shift
-  done
-  if [ ! $one_line ]; then
-    echo
-  fi
 }
 
 ##
@@ -175,4 +175,25 @@ export_properties() {
 ###
 command_exists () {
   command -v "$1" >/dev/null 2>&1;
+}
+
+##
+# Return the given or the origin git remote url
+##
+get_git_url() {
+  #git config --get remote.${1:-origin}.url
+  #git ls-remote --get-url [REMOTE]
+  return $(git remote get-url "${1:-origin}")
+}
+
+##
+# Check whether if the given tag exist from the current .git directory
+##
+is_tag_exists() {
+  if [ "$#" -eq 0 ]; then
+    error_exit "Insuffisant command argument. At least the expected git tag name is expected."
+  else
+    url=$(get_git_url)
+    return $(git ls-remote --heads --tags "${url}" | grep -E "refs/(heads|tags)/${1}")
+  fi
 }
