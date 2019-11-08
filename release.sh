@@ -290,7 +290,7 @@ argv indebug '--debug' "${@:$INDEX:$#}"
 argv insettingfile '--setting-file' "${@:$INDEX:$#}"
 argv inbashmodel '--bash-mode' "${@:$INDEX:$#}"
 
-[ ! -z "${innextsnapshot}" ] && $(export "DEBUG"="${indebug}") || colored --green "[Release] In label=${inlabel}"
+[ ! -z "${innextsnapshot}" ] && $(export "DEBUG"="${indebug}") || colored --green "[Option] debug on"
 
 case ${XCMD} in
   -h|--help)
