@@ -65,6 +65,25 @@ safe_checkout() {
   fi
 }
 
+update_nextrelease() {
+  if [ -f .variables ]; then
+    colored --blue "Updating next release version in (.variables) file ..."
+    sed -i "s/NEXT_RELEASE=${1}/NEXT_RELEASE=${2}/g" .variables
+  fi
+}
+
+###
+# Deploy the given profiles
+##
+profile_deploy() {
+  IFS=';' # hyphen (;) is set as delimiter
+  read -ra ADDR <<< "$1" # str is read into an array as tokens separated by IFS
+  for i in "${ADDR[@]}"; do # access each element of array
+    ./mvnw -B -X "${2}" --no-snapshot-updates -P"$i" -DskipTests=true deploy
+  done
+  IFS=' ' # reset to default value after usage
+}
+
 #pom_version() {
 #  if [[ -f "pom.xl" ]]; then
 #    version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
@@ -76,7 +95,7 @@ safe_checkout() {
 #}
 
 # shellcheck disable=SC2154
-__release() {
+__release__() {
 
   argv inarg '--arg' "${@:1:$#}"
   argv intag '--tag' "${@:1:$#}"
@@ -116,19 +135,20 @@ __release() {
   echo "pushing tag ${tag}"
   ./mvnw -B -X "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
-  #FIXME: Temporally fix to manually deploy (Deploy the new release tag)
-  ./mvnw -B -X "${inarg}" --no-snapshot-updates -DskipTests=true deploy
+  #Temporally fix to manually deploy (Deploy the new release tag)
+  profile_deploy "$inprofile" "${inarg}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
   ./mvnw -B -X versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
-  #FIXME: Temporally fix to manually deploy (Deploy the new snapshot)
-  ./mvnw -B -X "${inarg}" --no-snapshot-updates -DskipTests=true deploy
+  #Temporally fix to manually deploy (Deploy the new snapshot)
+  profile_deploy "$inprofile" "${inarg}" # Deploy after snapshot version is created
 }
 
 # Incremental versioning
 # shellcheck disable=SC2006
+# shellcheck disable=SC2154
 api_version() {
 
   # shellcheck disable=SC2236
@@ -151,28 +171,30 @@ api_version() {
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
 
-  __release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
+  __release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
+    --profile="${inprofile}"
 }
 
 #Date based versioning
+# shellcheck disable=SC2154
 ts_version() {
   colored --blue "[timestamp] Building version basee release"
 
-  argv fulldate '--full-date' ${@:1:$#}
-  argv informat '--format' ${@:1:$#}
+  argv fulldate '--full-date' "${@:1:$#}"
+  argv informat '--format' "${@:1:$#}"
 
-  argv inday '--day' ${@:1:$#}
-  argv inmonth '--month' ${@:1:$#}
-  argv inyear '--year' ${@:1:$#}
+  argv inday '--day' "${@:1:$#}"
+  argv inmonth '--month' "${@:1:$#}"
+  argv inyear '--year' "${@:1:$#}"
 
-  argv inlabel '--label' ${@:1:$#}
-  argv seperator '--separator' ${@:1:$#}
-  argv inpatch '--patch' ${@:1:$#}
-  argv inprofile '--profile' ${@:1:$#}
+  argv inlabel '--label' "${@:1:$#}"
+  argv seperator '--separator' "${@:1:$#}"
+  argv inpatch '--patch' "${@:1:$#}"
+  argv inprofile '--profile' "${@:1:$#}"
 
-  argv invarg '--varg' ${@:1:$#}
-  exists is_incremental '--continue-snapshot' ${@:1:$#}
-  argv innextsnapshot '--next-snapshot' ${@:1:$#}
+  argv invarg '--varg' "${@:1:$#}"
+  exists is_incremental '--continue-snapshot' "${@:1:$#}"
+  argv innextsnapshot '--next-snapshot' "${@:1:$#}"
 
   [ ! -z "$NEXT_RELEASE" ] && nextrelease="$NEXT_RELEASE" || nextrelease=$(date +'%y.%m.%d')
   [ ! -z "$informat" ] && format="$informat" || format='%y.%m.%d'
@@ -203,7 +225,8 @@ ts_version() {
   # shellcheck disable=SC2154
   [ ! -z "${innextsnapshot}" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
-  __release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
+  __release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}" \
+    --profile="${inprofile}"
 }
 
 help_message () {
@@ -217,6 +240,9 @@ help_message () {
     --label The given expect label used to tag the released version (release|tag|rc), etc...
     --next-snapshot Define this option (no matter the value) to indicate the ongoing snapshot version
     --patch Use this option to define the current patching version stage
+    --setting-file This option is globaly used to define the target maven settings file
+    --bash-mode This option can globaly use to define maven internal (-B) option
+    --debug global option used activate maven (X) option
 
   Options:
   -h, --help [(timestamp|ts) | (increment|api) ] Display this help message within the given command and exit.
@@ -259,6 +285,12 @@ else
   INDEX=1
   [ ! -z "$RELEASE_STYLE" ] && XCMD="$RELEASE_STYLE" || XCMD='--help'
 fi
+
+argv indebug '--debug' "${@:$INDEX:$#}"
+argv insettingfile '--setting-file' "${@:$INDEX:$#}"
+argv inbashmodel '--bash-mode' "${@:$INDEX:$#}"
+
+[ ! -z "${innextsnapshot}" ] && $(export "DEBUG"="${indebug}") || colored --green "[Release] In label=${inlabel}"
 
 case ${XCMD} in
   -h|--help)
