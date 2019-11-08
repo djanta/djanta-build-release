@@ -24,7 +24,8 @@ case "$(uname -s)" in
   *CYGWIN*) basedir=`cygpath -w "$basedir"`;;
 esac
 
-source ${basedir}/common.sh
+# shellcheck disable=SC1090
+source "${basedir}"/common.sh
 
 if [ "$#" -eq 0 ] &&  [ ! -f ".variables" ]; then
   error_exit "Insuffisant command argument"
@@ -42,10 +43,26 @@ fi
 
 #echo "[*] Version: ${version}"
 
+# shellcheck disable=SC2006
 increment() {
   local version=$1
-  result=`echo ${version} | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`
+  result=`echo "${version}" | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`
   echo "${result}-SNAPSHOT"
+}
+
+safe_checkout() {
+  # We need to be on a branch for release:perform to be able to create commits, and we want that branch to be master.
+  # But we also want to make sure that we build and release exactly the tagged version, so we verify that the remote
+  # master is where our tag is.
+  branch="${1:-master}"
+  git checkout -B "${branch}"
+  git fetch origin "${branch}":origin/"${branch}"
+  commit_local="$(git show --pretty='format:%H' "${branch}")"
+  commit_remote="$(git show --pretty='format:%H' origin/"${branch}")"
+  if [ "$commit_local" != "$commit_remote" ]; then
+    echo "${branch} on remote 'origin' has commits since the version under release, aborting"
+    exit 1
+  fi
 }
 
 #pom_version() {
@@ -58,13 +75,14 @@ increment() {
 #  fi;
 #}
 
-release() {
+# shellcheck disable=SC2154
+__release() {
 
-  argv inarg '--arg' ${@:1:$#}
-  argv intag '--tag' ${@:1:$#}
-  argv insnapshot '--snapshot' ${@:1:$#}
-  argv inlabel '--tag-prefix' ${@:1:$#}
-  argv inprofile '--profile' ${@:1:$#}
+  argv inarg '--arg' "${@:1:$#}"
+  argv intag '--tag' "${@:1:$#}"
+  argv insnapshot '--snapshot' "${@:1:$#}"
+  argv inlabel '--tag-prefix' "${@:1:$#}"
+  argv inprofile '--profile' "${@:1:$#}"
 
   colored --green "[Release] In label=${inlabel}"
 
@@ -75,13 +93,15 @@ release() {
 
   ## Version argument declaration ...
   [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
-  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" || snapshot_argv="-DnewVersion=$(increment ${intag})"
+  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" || snapshot_argv="-DnewVersion=$(increment "${intag}")"
 
   colored --green "[Release] Tag=${tag}"
   colored --green "[Release] Label=${label}"
   colored --green "[Release] Snapshot=${snapshot}"
   colored --green "[Release] Snapshot Label=${snapshot_argv}"
   colored --green "[Release] Tag Label=${tag_argv}"
+
+  # shellcheck disable=SC2154
   colored --green "[Release] Extra Arg=${inarg}"
   colored --green "[Release] Full version: ${fullversion}"
 
@@ -108,28 +128,30 @@ release() {
 }
 
 # Incremental versioning
+# shellcheck disable=SC2006
 api_version() {
 
+  # shellcheck disable=SC2236
   if [ ! -z "$NEXT_RELEASE" ]; then
     tag="$NEXT_RELEASE"
   else
     # extract the release version from the pom file
     version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-    tag=`echo ${version} | cut -d'-' -f 1`
+    tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
   # determine the next snapshot version
 #  snapshot=$(snapshot ${tag})
 
-  argv inlabel '--label' ${@:1:$#}
-  argv inpatch '--patch' ${@:1:$#}
-  argv insnapshot '--next-snapshot' ${@:1:$#}
-  argv invarg '--varg' ${@:1:$#}
-  argv inprofile '--profile' ${@:1:$#}
+  argv inlabel '--label' "${@:1:$#}"
+  argv inpatch '--patch' "${@:1:$#}"
+  argv insnapshot '--next-snapshot' "${@:1:$#}"
+  argv invarg '--varg' "${@:1:$#}"
+  argv inprofile '--profile' "${@:1:$#}"
 
-  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment ${tag})
+  [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
+  __release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
 }
 
 #Date based versioning
@@ -178,9 +200,10 @@ ts_version() {
 #        || snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 #  fi
 
-  [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
+  # shellcheck disable=SC2154
+  [ ! -z "${innextsnapshot}" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
-  release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
+  __release --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
 }
 
 help_message () {
@@ -206,14 +229,7 @@ EOF
 }
 
 usage() {
-  for i in ${@}; do
-    #colored --green "Command arugment: ${i}"
-#    case ${i} in
-#      --long-help)
-#      LONGHELP="1"
-#      ;;
-#    esac
-
+  for i in "${@}"; do
     case ${i} in
       ts|timestamp)
 cat <<-EOF
@@ -246,7 +262,7 @@ fi
 
 case ${XCMD} in
   -h|--help)
-    help_message ${@:$INDEX:$#}
+    help_message "${@:$INDEX:$#}"
     graceful_exit ${?}
     ;;
   timestamp|ts|--timestamp|--ts)
@@ -258,7 +274,7 @@ case ${XCMD} in
 esac
 
 if [ -n "${XCMD}" ]; then
-  ${XCMD} ${@:$INDEX:$#}
+  ${XCMD} "${@:$INDEX:$#}"
   graceful_exit ${?}
 else
   graceful_exit

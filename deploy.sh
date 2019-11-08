@@ -30,7 +30,8 @@ case "$(uname -s)" in
 esac
 
 # Load current shared labrary ...
-source ${basedir}/common.sh
+# shellcheck disable=SC1090
+source "${basedir}"/common.sh
 
 build_started_by_tag() {
   if [ "${TRAVIS_TAG}" == "" ]; then
@@ -58,6 +59,16 @@ is_travis_branch_master() {
     return 0
   else
     echo "[Not Publishing] Travis branch is not master"
+    return 1
+  fi
+}
+
+is_travis_branch_release() {
+  if [ "${TRAVIS_BRANCH}" = release ]; then
+    echo "[Publishing] Travis branch is release"
+    return 0
+  else
+    echo "[Not Publishing] Travis branch is not release"
     return 1
   fi
 }
@@ -103,6 +114,7 @@ is_release_commit() {
 }
 
 release_version() {
+    # shellcheck disable=SC2001
     echo "${TRAVIS_TAG}" | sed 's/^release-//'
 }
 
@@ -120,13 +132,30 @@ safe_checkout_master() {
   fi
 }
 
+safe_checkout() {
+  # We need to be on a branch for release:perform to be able to create commits, and we want that branch to be master.
+  # But we also want to make sure that we build and release exactly the tagged version, so we verify that the remote
+  # master is where our tag is.
+  local branch="${1:-master}"
+  git checkout -B "${branch}"
+  git fetch origin "${branch}":origin/"${branch}"
+  commit_local="$(git show --pretty='format:%H' "${branch}")"
+  commit_remote="$(git show --pretty='format:%H' origin/"${branch}")"
+  if [ "$commit_local" != "$commit_remote" ]; then
+    echo "${branch} on remote 'origin' has commits since the version under release, aborting"
+    exit 1
+  fi
+}
+
 javadoc_to_gh_pages() {
   version="$(print_project_version)"
   rm -rf javadoc-builddir
   builddir="javadoc-builddir/$version"
 
   # Collect javadoc for all modules
+  # shellcheck disable=SC2044
   for jar in $(find . -name "*${version}-javadoc.jar"); do
+    # shellcheck disable=SC2001
     module="$(echo "$jar" | sed "s~.*/\(.*\)-${version}-javadoc.jar~\1~")"
     this_builddir="$builddir/$module"
     if [ -d "$this_builddir" ]; then
@@ -176,6 +205,7 @@ fi
 ./mvnw install -nsu -Dlicense.skip=true
 
 # formatter errors:
+# shellcheck disable=SC2046
 if [ -z $(git status --porcelain) ];
 then
   echo "No changes detected, all good"
