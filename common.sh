@@ -144,9 +144,10 @@ argv() {
   done
 }
 
+# shellcheck disable=SC2006
 exists() {
   arg_name="${2}"
-  for i in ${@:3:$#}; do
+  for i in "${@:3:$#}"; do
     PARAM=`echo $i | awk -F= '{print $1}'`
     VALUE=`echo $i | awk -F= '{print $2}'`
     case ${PARAM} in

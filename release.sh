@@ -286,11 +286,12 @@ else
   [ ! -z "$RELEASE_STYLE" ] && XCMD="$RELEASE_STYLE" || XCMD='--help'
 fi
 
-argv indebug '--debug' "${@:$INDEX:$#}"
+exists indebug '--debug' "${@:$INDEX:$#}"
+#argv indebug '--debug' "${@:$INDEX:$#}"
 argv insettingfile '--setting-file' "${@:$INDEX:$#}"
 argv inbashmodel '--bash-mode' "${@:$INDEX:$#}"
 
-[ ! -z "${innextsnapshot}" ] && $(export "DEBUG"="${indebug}") || colored --red "[Option] debug Off"
+[ "${indebug}" ] && $(export "DEBUG"="-X") || colored --red "[Option] debug Off"
 
 case ${XCMD} in
   -h|--help)
