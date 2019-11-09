@@ -130,11 +130,12 @@ die() {
 #}
 
 #value(){
+# shellcheck disable=SC2006
 argv() {
   arg_name="${2}"
-  for i in ${@:3:$#}; do
-    PARAM=`echo $i | awk -F= '{print $1}'`
-    VALUE=`echo $i | awk -F= '{print $2}'`
+  for i in "${@:3:$#}"; do
+    PARAM=`echo "$i" | awk -F= '{print $1}'`
+    VALUE=`echo "$i" | awk -F= '{print $2}'`
     case ${PARAM} in
     "$arg_name")
       #value_=${i}
@@ -148,8 +149,8 @@ argv() {
 exists() {
   arg_name="${2}"
   for i in "${@:3:$#}"; do
-    PARAM=`echo $i | awk -F= '{print $1}'`
-    VALUE=`echo $i | awk -F= '{print $2}'`
+    PARAM=`echo "$i" | awk -F= '{print $1}'`
+    VALUE=`echo "$i" | awk -F= '{print $2}'`
     case ${PARAM} in
     "$arg_name")
       eval "$1=true"  # Assign new value.
@@ -181,6 +182,9 @@ command_exists () {
 ##
 # Return the given or the origin git remote url
 ##
+# shellcheck disable=SC2120
+# shellcheck disable=SC2046
+# shellcheck disable=SC2005
 get_git_url() {
   #git config --get remote.${1:-origin}.url
   #git ls-remote --get-url [REMOTE]
@@ -189,6 +193,8 @@ get_git_url() {
 
 ##
 # Check whether if the given tag exist from the current .git directory
+# shellcheck disable=SC2046
+# shellcheck disable=SC2005
 ##
 is_tag_exists() {
   if [ "$#" -eq 0 ]; then

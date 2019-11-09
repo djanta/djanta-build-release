@@ -74,12 +74,14 @@ update_nextrelease() {
 
 ###
 # Deploy the given profiles
+# shellcheck disable=SC2116
 ##
 profile_deploy() {
   IFS=';' # hyphen (;) is set as delimiter
-  read -ra ADDR <<< "$1" # str is read into an array as tokens separated by IFS
+  read -ra ADDR <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for i in "${ADDR[@]}"; do # access each element of array
-    ./mvnw -B -X "${2}" --no-snapshot-updates -P"$i" -DskipTests=true deploy
+    ./mvnw [ -n "${MVN_BASHMODE}" ] && $(echo "${MVN_BASHMODE}") [ -n "${MVN_DEBUG}" ] && $(echo "${MVN_DEBUG}") \
+      --no-snapshot-updates -P"$i" -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
 }
@@ -171,8 +173,7 @@ api_version() {
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
 
-  __release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
-    --profile="${inprofile}"
+  __release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
 }
 
 #Date based versioning
@@ -225,8 +226,7 @@ ts_version() {
   # shellcheck disable=SC2154
   [ ! -z "${innextsnapshot}" ] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
-  __release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}" \
-    --profile="${inprofile}"
+  __release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
 }
 
 help_message () {
@@ -243,6 +243,7 @@ help_message () {
     --setting-file This option is globaly used to define the target maven settings file
     --bash-mode This option can globaly use to define maven internal (-B) option
     --debug global option used activate maven (X) option
+    --profile this option define your maven profile. ex: sonatype,other. If you wish to run your profile separaly, please use a comma (;) separator ex: sonatype,other;!sonatype,github
 
   Options:
   -h, --help [(timestamp|ts) | (increment|api) ] Display this help message within the given command and exit.
@@ -289,10 +290,14 @@ fi
 exists indebug '--debug' "${@:$INDEX:$#}"
 argv insettingfile '--setting-file' "${@:$INDEX:$#}"
 exists inbashmodel '--bash-mode' "${@:$INDEX:$#}"
+argv inprofile '--profile' "${@:$INDEX:$#}"
+argv invarg '--varg' "${@:$INDEX:$#}"
 
+[ "${inbashmodel}" ] && $(export "MVN_BASHMODE"="-B") || colored --yellow "[Option] Maven bash mode Off"
 [ "${indebug}" ] && $(export "MVN_DEBUG"="-X") || colored --red "[Option] Maven debug Off"
 [ -n "${insettingfile}" ] && $(export "MVN_SETTINGS"="${insettingfile}") || colored --yellow "[Option] Maven settings Off"
-[ "${inbashmodel}" ] && $(export "MVN_BASHMODE"="-B") || colored --yellow "[Option] Maven bash mode Off"
+[ -n "${inprofile}" ] && $(export "MVN_PROFILES"="${inprofile}") || colored --yellow "[Option] Maven profiles Off"
+[ -n "${invarg}" ] && $(export "MVN_VARG"="${invarg}")
 
 case ${XCMD} in
   -h|--help)
