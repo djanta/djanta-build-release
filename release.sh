@@ -287,11 +287,12 @@ else
 fi
 
 exists indebug '--debug' "${@:$INDEX:$#}"
-#argv indebug '--debug' "${@:$INDEX:$#}"
 argv insettingfile '--setting-file' "${@:$INDEX:$#}"
-argv inbashmodel '--bash-mode' "${@:$INDEX:$#}"
+exists inbashmodel '--bash-mode' "${@:$INDEX:$#}"
 
-[ "${indebug}" ] && $(export "DEBUG"="-X") || colored --red "[Option] debug Off"
+[ "${indebug}" ] && $(export "MVN_DEBUG"="-X") || colored --red "[Option] debug Off"
+[ -n "${insettingfile}" ] && $(export "MVN_SETTINGS"="${insettingfile}") || colored --gray "[Option] Maven settings Off"
+[ "${inbashmodel}" ] && $(export "MVN_BASHMODE"="-B") || colored --gray "[Option] Maven settings Off"
 
 case ${XCMD} in
   -h|--help)
