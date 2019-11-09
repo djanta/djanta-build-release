@@ -290,9 +290,9 @@ exists indebug '--debug' "${@:$INDEX:$#}"
 argv insettingfile '--setting-file' "${@:$INDEX:$#}"
 exists inbashmodel '--bash-mode' "${@:$INDEX:$#}"
 
-[ "${indebug}" ] && $(export "MVN_DEBUG"="-X") || colored --red "[Option] debug Off"
-[ -n "${insettingfile}" ] && $(export "MVN_SETTINGS"="${insettingfile}") || colored --gray "[Option] Maven settings Off"
-[ "${inbashmodel}" ] && $(export "MVN_BASHMODE"="-B") || colored --gray "[Option] Maven settings Off"
+[ "${indebug}" ] && $(export "MVN_DEBUG"="-X") || colored --red "[Option] Maven debug Off"
+[ -n "${insettingfile}" ] && $(export "MVN_SETTINGS"="${insettingfile}") || colored --yellow "[Option] Maven settings Off"
+[ "${inbashmodel}" ] && $(export "MVN_BASHMODE"="-B") || colored --yellow "[Option] Maven bash mode Off"
 
 case ${XCMD} in
   -h|--help)
