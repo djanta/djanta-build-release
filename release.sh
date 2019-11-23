@@ -295,7 +295,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   colored --blue "Release branch: ${inrbranch}"
 
   rbranch="${RELEASE_BRANCH:-release}"
-  [[ -n "${inrbranch}" ]] && $(export "RELEASE_BRANCH"="${inrbranch}") || $(export "RELEASE_BRANCH"="${rbranch}")
+  [[ ! -z "${inrbranch}" ]] && $(export "RELEASE_BRANCH"="${inrbranch}") || $(export "RELEASE_BRANCH"="${rbranch}")
 
   # Check if we start the tag release from from the expected branch.
   [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be: \"${RELEASE_BRANCH}\""
