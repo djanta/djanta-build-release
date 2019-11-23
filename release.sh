@@ -160,8 +160,7 @@ release__() {
   #Temporally fix to manually deploy (Deploy the new snapshot)
   mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
-  ## Now merge the working tag branch into master & then push the master
-  merge_release__
+  merge_release__ ## Now merge the working tag branch into master & then push the master
 }
 
 # Incremental versioning
@@ -301,11 +300,11 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   argv invarg '--varg' "${@:$INDEX:$#}"
   argv inrbranch '--release-branch' "${@:$INDEX:$#}"
 
-  [[ "${inbashmodel}" ]] && MVN_BASHMODE="-B" || colored --yellow "[Option] Maven bash mode Off"
+  [[ "${inbashmodel}" ]] && export MVN_BASHMODE="-B" || colored --yellow "[Option] Maven bash mode Off"
   [[ "${indebug}" ]] && export MVN_DEBUG="-X" || colored --red "[Option] Maven debug Off"
-  [[ -n "${insettingfile}" ]] && MVN_SETTINGS="${insettingfile}" || colored --yellow "[Option] Maven settings Off"
-  [[ -n "${inprofile}" ]] && MVN_PROFILES="${inprofile}" || colored --yellow "[Option] Maven profiles Off"
-  [[ -n "${invarg}" ]] && MVN_VARG="${invarg}"
+  [[ -n "${insettingfile}" ]] && export MVN_SETTINGS="${insettingfile}" || colored --yellow "[Option] Maven settings Off"
+  [[ -n "${inprofile}" ]] && export MVN_PROFILES="${inprofile}" || colored --yellow "[Option] Maven profiles Off"
+  [[ -n "${invarg}" ]] && export MVN_VARG="${invarg}"
 
   # Load the project given .variables file if any
   if [[ -f ".variables" ]]; then
@@ -316,10 +315,10 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}"
 
   rbranch="${RELEASE_BRANCH:-release}"
-  [[ ! -z "${inrbranch}" ]] && $(export "RELEASE_BRANCH"="${inrbranch}") || $(export "RELEASE_BRANCH"="${rbranch}")
+  [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
 
   # Check if we start the tag release from from the expected branch.
-  [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be: \"${rbranch}\""
+  [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be: \"${RELEASE_BRANCH}\""
 fi
 
 case ${XCMD} in
