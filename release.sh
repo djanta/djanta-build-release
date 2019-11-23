@@ -313,7 +313,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
     export_properties .variables
   fi
 
-  colored --blue "Release branch: ${inrbranch}"
+  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}"
 
   rbranch="${RELEASE_BRANCH:-release}"
   [[ ! -z "${inrbranch}" ]] && $(export "RELEASE_BRANCH"="${inrbranch}") || $(export "RELEASE_BRANCH"="${rbranch}")
