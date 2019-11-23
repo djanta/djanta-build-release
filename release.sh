@@ -302,7 +302,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   argv inrbranch '--release-branch' "${@:$INDEX:$#}"
 
   [[ "${inbashmodel}" ]] && $(export MVN_BASHMODE="-B") || colored --yellow "[Option] Maven bash mode Off"
-  [[ "${indebug}" ]] && $(export MVN_DEBUG="-X") || colored --red "[Option] Maven debug Off"
+  [[ "${indebug}" ]] && MVN_DEBUG="-X" || colored --red "[Option] Maven debug Off"
   [[ -n "${insettingfile}" ]] && $(export "MVN_SETTINGS"="${insettingfile}") || colored --yellow "[Option] Maven settings Off"
   [[ -n "${inprofile}" ]] && $(export "MVN_PROFILES"="${inprofile}") || colored --yellow "[Option] Maven profiles Off"
   [[ -n "${invarg}" ]] && $(export "MVN_VARG"="${invarg}")
