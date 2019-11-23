@@ -177,8 +177,6 @@ api_version() {
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
-  error_exit "DEBUGING BREAK: ${tag}"
-
   # determine the next snapshot version
 #  snapshot=$(snapshot ${tag})
 
