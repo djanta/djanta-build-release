@@ -81,6 +81,24 @@ mvn_deploy__() {
   IFS=' ' # reset to default value after usage
 }
 
+merge_release__() {
+  # Merge the current tagging branch into the master branch
+  if ! is_master_branch; then
+    safe_checkout "master"
+    git merge origin/"${RELEASE_BRANCH}"
+    if [[ -z $(git status --porcelain) ]];
+    then
+      echo "No changes detected, all good"
+    else
+      echo "The following files have formatting changes:"
+      git status --porcelain
+      echo ""
+      echo "Please run 'mvn clean install' locally to format files"
+      #exit 1
+    fi
+  fi
+}
+
 #pom_version() {
 #  if [[ -f "pom.xl" ]]; then
 #    version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
@@ -141,6 +159,9 @@ release__() {
 
   #Temporally fix to manually deploy (Deploy the new snapshot)
   mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
+
+  ## Now merge the working tag branch into master & then push the master
+  merge_release__
 }
 
 # Incremental versioning
