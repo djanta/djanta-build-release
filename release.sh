@@ -147,19 +147,21 @@ release__() {
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw -B -X "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
+  ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
+    "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
   #Temporally fix to manually deploy (Deploy the new release tag)
   mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
-  ./mvnw -B -X versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
+  ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
+    versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
   #Temporally fix to manually deploy (Deploy the new snapshot)
   mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
-  merge_release__ ## Now merge the working tag branch into master & then push the master
+  #merge_release__ ## Now merge the working tag branch into master & then push the master
 }
 
 # Incremental versioning
