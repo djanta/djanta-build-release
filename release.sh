@@ -140,7 +140,7 @@ release__() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
-  ./mvnw \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
