@@ -233,3 +233,62 @@ is_master_branch() {
     return 1
   fi
 }
+
+print_project_version() {
+  ./mvnw help:evaluate -N -Dexpression=project.version|sed -n '/^[0-9]/p'
+}
+
+is_release_commit() {
+  project_version="$(print_project_version)"
+  if [[ "$project_version" =~ ^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
+    echo "Build started by release commit $project_version. Will synchronize to maven central."
+    return 0
+  else
+    return 1
+  fi
+}
+
+javadoc_to_gh_pages() {
+  version="$(print_project_version)"
+  rm -rf javadoc-builddir
+  builddir="javadoc-builddir/$version"
+
+  # Collect javadoc for all modules
+  # shellcheck disable=SC2044
+  for jar in $(find . -name "*${version}-javadoc.jar"); do
+    # shellcheck disable=SC2001
+    module="$(echo "$jar" | sed "s~.*/\(.*\)-${version}-javadoc.jar~\1~")"
+    this_builddir="$builddir/$module"
+    if [[ -d "$this_builddir" ]]; then
+        # Skip modules we've already processed.
+        # We may find multiple instances of the same javadoc jar because of, for instance,
+        # integration tests copying jars around.
+        continue
+    fi
+    mkdir -p "$this_builddir"
+    unzip "$jar" -d "$this_builddir"
+    # Build a simple module-level index
+    echo "<li><a href=\"${module}/index.html\">${module}</a></li>" >> "${builddir}/index.html"
+  done
+
+  # Update gh-pages
+  git fetch origin gh-pages:gh-pages
+  git checkout gh-pages
+  rm -rf "$version"
+  mv "javadoc-builddir/$version" ./
+  rm -rf "javadoc-builddir"
+
+  # Update simple version-level index
+  if ! grep "$version" index.html 2>/dev/null; then
+    echo "<li><a href=\"${version}/index.html\">${version}</a></li>" >> index.html
+  fi
+
+  # Ensure links are ordered by versions, latest on top
+  sort -rV index.html > index.html.sorted
+  mv index.html.sorted index.html
+
+  git add "$version"
+  git add index.html
+  git commit -m "Automatically updated javadocs for $version"
+  git push origin gh-pages
+}

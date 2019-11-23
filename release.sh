@@ -294,6 +294,9 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   colored --blue "Current branch: $(git_branch)"
 
   export RELEASE_BRANCH="${RELEASE_BRANCH:-release}"
+
+  # Check if we start the tag release from from the expected branch.
+  [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be ${RELEASE_BRANCH}"
 fi
 
 case ${XCMD} in
