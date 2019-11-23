@@ -74,8 +74,7 @@ mvn_deploy__() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for i in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
-      --no-snapshot-updates -P"$i" -DskipTests=true deploy
+    ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} -P"$i" -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
 }
@@ -110,7 +109,6 @@ merge_release__() {
 
 # shellcheck disable=SC2154
 release__() {
-
   argv inarg '--arg' "${@:1:$#}"
   argv intag '--tag' "${@:1:$#}"
   argv insnapshot '--snapshot' "${@:1:$#}"
@@ -142,7 +140,8 @@ release__() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
-  ./mvnw -B -X versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
+  ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
+    versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
@@ -151,15 +150,16 @@ release__() {
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
   #Temporally fix to manually deploy (Deploy the new release tag)
-  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
+##  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
+  echo "pushing snapshot ${snapshot}"
   ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
     versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
   #Temporally fix to manually deploy (Deploy the new snapshot)
-  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
+##  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
   #merge_release__ ## Now merge the working tag branch into master & then push the master
 }
