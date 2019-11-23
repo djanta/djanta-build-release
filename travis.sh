@@ -53,7 +53,7 @@ is_pull_request() {
   fi
 }
 
-is_travis_branch_master() {
+is_master_branch() {
   if [ "${TRAVIS_BRANCH}" = master ]; then
     echo "[Publishing] Travis branch is master"
     return 0
@@ -63,7 +63,7 @@ is_travis_branch_master() {
   fi
 }
 
-is_travis_branch_release() {
+is_release_branch() {
   if [ "${TRAVIS_BRANCH}" = release ]; then
     echo "[Publishing] Travis branch is release"
     return 0
@@ -114,8 +114,8 @@ is_release_commit() {
 }
 
 release_version() {
-    # shellcheck disable=SC2001
-    echo "${TRAVIS_TAG}" | sed 's/^release-//'
+  # shellcheck disable=SC2001
+  echo "${TRAVIS_TAG}" | sed 's/^release-//'
 }
 
 safe_checkout_master() {
@@ -223,7 +223,7 @@ if is_pull_request; then
 
 # If we are on master, we will deploy the latest snapshot or release version
 #   - If a release commit fails to deploy for a transient reason, delete the broken version from bintray and click rebuild
-elif is_travis_branch_master; then
+elif is_master_branch; then
   #./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -pl -:djanta-benchmark -DskipTests deploy
   ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests deploy
 

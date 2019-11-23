@@ -191,6 +191,10 @@ get_git_url() {
   echo $(git remote get-url "${1:-origin}")
 }
 
+git_branch() {
+  echo $(git branch | grep \* | cut -d ' ' -f2)
+}
+
 ##
 # Check whether if the given tag exist from the current .git directory
 # shellcheck disable=SC2046
@@ -202,5 +206,30 @@ is_tag_exists() {
   else
     url=$(get_git_url)
     echo $(git ls-remote --heads --tags "${url}" | grep -E "refs/(heads|tags)/${1}")
+  fi
+}
+
+# We need to be on a branch for release:perform to be able to create commits, and we want that branch to be master.
+# But we also want to make sure that we build and release exactly the tagged version, so we verify that the remote
+# master is where our tag is.
+safe_checkout() {
+  local branch="${1:-master}"
+  git checkout -B "${branch}"
+  git fetch origin "${branch}":origin/"${branch}"
+  commit_local="$(git show --pretty='format:%H' "${branch}")"
+  commit_remote="$(git show --pretty='format:%H' origin/"${branch}")"
+  if [[ "$commit_local" != "$commit_remote" ]]; then
+    echo "${branch} on remote 'origin' has commits since the version under release, aborting"
+    exit 1
+  fi
+}
+
+is_master_branch() {
+  if [[ $(git branch | grep \* | cut -d ' ' -f2) = master ]]; then
+    #echo "[Publishing] Travis branch is master"
+    return 0
+  else
+    #echo "[Not Publishing] Travis branch is not master"
+    return 1
   fi
 }

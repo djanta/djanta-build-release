@@ -70,10 +70,10 @@ update_release__() {
 # Deploy the given profiles
 # shellcheck disable=SC2116
 ##
-__mvn_deploy__() {
+mvn_deploy__() {
   IFS=';' # hyphen (;) is set as delimiter
-  read -ra ADDR <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
-  for i in "${ADDR[@]}"; do # access each element of array
+  read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
+  for i in "${PROFILES[@]}"; do # access each element of array
     ./mvnw [ -n "${MVN_BASHMODE}" ] && $(echo "${MVN_BASHMODE}") [ -n "${MVN_DEBUG}" ] && $(echo "${MVN_DEBUG}") \
       [ -n "${MVN_VARG}" ] && $(echo "${MVN_VARG}") \
       --no-snapshot-updates -P"$i" -DskipTests=true deploy
@@ -102,23 +102,23 @@ release__() {
 
   colored --green "[Release] In label=${inlabel}"
 
-  [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot=''
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
   [[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
   [[ ! -z "$fullversion" ]] && label="-Dtag=${fullversion}" || label=''
+  [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot="$(increment "${tag}")"
 
   ## Version argument declaration ...
-  [[ ! -z "$intag" ]] && tag_argv="-DnewVersion=${intag}" || tag_argv='-DremoveSnapshot'
-  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" || snapshot_argv="-DnewVersion=$(increment "${intag}")"
+  [[ ! -z "$tag" ]] && tag_argv="-DnewVersion=${tag}" || tag_argv='-DremoveSnapshot'
+  [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" #|| snapshot_argv="-DnewVersion=$(increment "${tag}")"
 
   colored --green "[Release] Tag=${tag}"
   colored --green "[Release] Label=${label}"
-  colored --green "[Release] Snapshot=${snapshot}"
-  colored --green "[Release] Snapshot Label=${snapshot_argv}"
   colored --green "[Release] Tag Label=${tag_argv}"
+  colored --green "[Release] Snapshot=${snapshot}"
+  colored --green "[Release] Version Arg=${snapshot_argv}"
 
   # shellcheck disable=SC2154
-  colored --green "[Release] Extra Arg=${inarg}"
+  colored --green "[Release] Extra Arg=${tag}"
   colored --green "[Release] Full version: ${fullversion}"
 
   [[ ! -z $(is_tag_exists "${fullversion}") ]] && error_exit "Following tag: ${fullversion}, has already existed."
@@ -133,14 +133,14 @@ release__() {
   ./mvnw -B -X "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
   #Temporally fix to manually deploy (Deploy the new release tag)
-  __mvn_deploy__ "${inprofile}" "${inarg}" # Deploy after version tag is created
+  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
   ./mvnw -B -X versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
   #Temporally fix to manually deploy (Deploy the new snapshot)
-  __mvn_deploy__ "${inprofile}" "${inarg}" # Deploy after snapshot version is created
+  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 }
 
 # Incremental versioning
@@ -205,20 +205,6 @@ ts_version() {
   local ver="${y}${sep}${m}${sep}${d}"
 
   [[ ! -z "$inpatch" ]] && tag="${ver}-${inpatch}" || tag="$ver"
-
-  ##
-  # IF '--continue-snapshot' was passed need to increment the snapshot version from the existing pom file
-  ##
-#  if [ -z "$innextsnapshot" ] || ([ is_incremental ] && [ -f "pom.xml" ] && [ -f "mvnw" ]); then
-#    pversion=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-#    snapshot=$(increment ${pversion})
-#
-#    colored --white "[INFO] POM Version: ${pversion}"
-#    colored --white "[INFO] Next snapshot: ${snapshot}"
-#  else
-#    [ ! -z "$innextsnapshot" ] && snapshot="${innextsnapshot}" \
-#        || snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
-#  fi
 
   # shellcheck disable=SC2154
   [[ ! -z "${innextsnapshot}" ]] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
@@ -304,6 +290,10 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
     colored --blue "Exporting .variables file ..."
     export_properties .variables
   fi
+
+  colored --blue "Current branch: $(git_branch)"
+
+  export RELEASE_BRANCH="${RELEASE_BRANCH:-release}"
 fi
 
 case ${XCMD} in
