@@ -278,6 +278,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   exists inbashmodel '--bash-mode' "${@:$INDEX:$#}"
   argv inprofile '--profile' "${@:$INDEX:$#}"
   argv invarg '--varg' "${@:$INDEX:$#}"
+  argv inrbranch '--release-branch' "${@:$INDEX:$#}"
 
   [[ "${inbashmodel}" ]] && $(export "MVN_BASHMODE"="-B") || colored --yellow "[Option] Maven bash mode Off"
   [[ "${indebug}" ]] && $(export "MVN_DEBUG"="-X") || colored --red "[Option] Maven debug Off"
@@ -291,12 +292,11 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
     export_properties .variables
   fi
 
-  colored --blue "Current branch: $(git_branch)"
-
-  export RELEASE_BRANCH="${RELEASE_BRANCH:-release}"
+  rbranch="${RELEASE_BRANCH:-release}"
+  [[ -n "${inrbranch}" ]] && $(export "RELEASE_BRANCH"="${inrbranch}") || $(export "RELEASE_BRANCH"="${rbranch}")
 
   # Check if we start the tag release from from the expected branch.
-  [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be \"${RELEASE_BRANCH}\""
+  [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be: \"${RELEASE_BRANCH}\""
 fi
 
 case ${XCMD} in
