@@ -74,8 +74,7 @@ mvn_deploy__() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for i in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw [ -n "${MVN_BASHMODE}" ] && $(echo "${MVN_BASHMODE}") [ -n "${MVN_DEBUG}" ] && $(echo "${MVN_DEBUG}") \
-      [ -n "${MVN_VARG}" ] && $(echo "${MVN_VARG}") \
+    ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
       --no-snapshot-updates -P"$i" -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
