@@ -140,13 +140,13 @@ release__() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
-  ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
+  ./mvnw \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
+  ./mvnw \
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
   #Temporally fix to manually deploy (Deploy the new release tag)
@@ -154,7 +154,7 @@ release__() {
 
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
-  ./mvnw ${MVN_BASHMODE:-""} ${MVN_BASHMODE:-""} ${MVN_DEBUG:-""} ${MVN_VARG:-""} \
+  ./mvnw \
     versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
