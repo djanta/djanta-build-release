@@ -150,11 +150,14 @@ release__() {
 api_version() {
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
+    export PREV_RELEASE="$NEXT_RELEASE"
   else
     # extract the release version from the pom file
     version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
+
+  error_exit "DEBUGING BREAK: ${tag}"
 
   # determine the next snapshot version
 #  snapshot=$(snapshot ${tag})
