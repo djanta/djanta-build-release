@@ -83,16 +83,14 @@ merge_release__() {
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
     safe_checkout "master"
-    git merge origin/"${RELEASE_BRANCH}"
     if [[ -z $(git status --porcelain) ]];
     then
       echo "No changes detected, all good"
     else
       echo "The following files have formatting changes:"
       git status --porcelain
-      echo ""
-      echo "Please run 'mvn clean install' locally to format files"
-      #exit 1
+      git merge origin/"${RELEASE_BRANCH}"
+      git push origin $(git_branch)
     fi
   else
     colored --yellow "[Merger] The release was performed in the current master branch"
@@ -120,8 +118,7 @@ release__() {
   colored --green "[Release] In label=${inlabel}"
 
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
-  #[[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
-  [[ ! -z "$inlabel" ]] && fullversion="v${tag}" || fullversion=''
+  [[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
   [[ ! -z "$fullversion" ]] && label="-Dtag=${fullversion}" || label=''
   [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot="$(increment "${tag}")"
 
@@ -156,7 +153,7 @@ release__() {
     -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
   # Generate the Github pages ...
-  javadoc_to_gh_pages
+  #javadoc_to_gh_pages
 
   #Temporally fix to manually deploy (Deploy the new release tag)
   mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
