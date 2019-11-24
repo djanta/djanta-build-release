@@ -74,7 +74,7 @@ mvn_deploy__() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for i in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw ${MVN_BASHMODE:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P"$i" -DskipTests=true deploy
+    ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} -P"$i" -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
 }
@@ -94,6 +94,8 @@ merge_release__() {
       echo "Please run 'mvn clean install' locally to format files"
       #exit 1
     fi
+  else
+    colored --yellow "[Merger] The release was performed in the current master branch"
   fi
 }
 
@@ -140,21 +142,27 @@ release__() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
+
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+    -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
+
+  # Generate the Github pages ...
+  javadoc_to_gh_pages
 
   #Temporally fix to manually deploy (Deploy the new release tag)
   mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
 
@@ -301,7 +309,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
 
   [[ "${inbashmodel}" ]] && export MVN_BASHMODE="-B" || colored --yellow "[Option] Maven bash mode Off"
   [[ "${indebug}" ]] && export MVN_DEBUG="-X" || colored --red "[Option] Maven debug Off"
-  [[ -n "${insettingfile}" ]] && export MVN_SETTINGS="${insettingfile}" || colored --yellow "[Option] Maven settings Off"
+  [[ -f "${insettingfile}" ]] && export MVN_SETTINGS="-s ${insettingfile}" || colored --yellow "[Option] Maven settings Off"
   [[ -n "${inprofile}" ]] && export MVN_PROFILES="${inprofile}" || colored --yellow "[Option] Maven profiles Off"
   [[ -n "${invarg}" ]] && export MVN_VARG="${invarg}"
 
