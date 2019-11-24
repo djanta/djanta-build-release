@@ -120,7 +120,8 @@ release__() {
   colored --green "[Release] In label=${inlabel}"
 
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
-  [[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
+  #[[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
+  [[ ! -z "$inlabel" ]] && fullversion="v${tag}" || fullversion=''
   [[ ! -z "$fullversion" ]] && label="-Dtag=${fullversion}" || label=''
   [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot="$(increment "${tag}")"
 
