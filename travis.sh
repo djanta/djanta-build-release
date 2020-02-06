@@ -1,32 +1,37 @@
 #!/usr/bin/env bash
+
 #
-# MIT License
+# Copyright 2019 DJANTA, LLC (https://www.djanta.io)
 #
-# Copyright (c) 2015-2019 - DJANTA, LLC (https://www.djanta.io)
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+#   Unless required by applicable law or agreed toMap in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 #
 
 # taken from OpenZipkin
 
 set -euo pipefail
 set -x
+
+argv0=$(echo "$0" | sed -e 's,\\,/,g')
+basedir=$(dirname "$(readlink "$0" || echo "$argv0")")
+
+case "$(uname -s)" in
+  Linux) basedir=$(dirname "$(readlink -f "$0" || echo "$argv0")");;
+  *CYGWIN*) basedir=`cygpath -w "$basedir"`;;
+esac
+
+# Load current shared labrary ...
+# shellcheck disable=SC1090
+source "${basedir}"/common.sh
 
 build_started_by_tag() {
   if [ "${TRAVIS_TAG}" == "" ]; then
@@ -48,12 +53,22 @@ is_pull_request() {
   fi
 }
 
-is_travis_branch_master() {
+is_master_branch() {
   if [ "${TRAVIS_BRANCH}" = master ]; then
     echo "[Publishing] Travis branch is master"
     return 0
   else
     echo "[Not Publishing] Travis branch is not master"
+    return 1
+  fi
+}
+
+is_release_branch() {
+  if [ "${TRAVIS_BRANCH}" = release ]; then
+    echo "[Publishing] Travis branch is release"
+    return 0
+  else
+    echo "[Not Publishing] Travis branch is not release"
     return 1
   fi
 }
@@ -77,7 +92,7 @@ check_release_tag() {
         echo "Build started by version tag $tag. During the release process tags like this"
         echo "are created by the 'release' Maven plugin. Nothing to do here."
         exit 0
-    elif [[ ! "$tag" =~ ^release-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
+    elif [[ ! "$tag" =~ ^(release|v|version|rc)-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
         echo "You must specify a tag of the format 'release-0.0.0' to release this project."
         echo "The provided tag ${tag} doesn't match that. Aborting."
         exit 1
@@ -99,7 +114,8 @@ is_release_commit() {
 }
 
 release_version() {
-    echo "${TRAVIS_TAG}" | sed 's/^release-//'
+  # shellcheck disable=SC2001
+  echo "${TRAVIS_TAG}" | sed 's/^release-//'
 }
 
 safe_checkout_master() {
@@ -116,13 +132,30 @@ safe_checkout_master() {
   fi
 }
 
+safe_checkout() {
+  # We need to be on a branch for release:perform to be able to create commits, and we want that branch to be master.
+  # But we also want to make sure that we build and release exactly the tagged version, so we verify that the remote
+  # master is where our tag is.
+  local branch="${1:-master}"
+  git checkout -B "${branch}"
+  git fetch origin "${branch}":origin/"${branch}"
+  commit_local="$(git show --pretty='format:%H' "${branch}")"
+  commit_remote="$(git show --pretty='format:%H' origin/"${branch}")"
+  if [ "$commit_local" != "$commit_remote" ]; then
+    echo "${branch} on remote 'origin' has commits since the version under release, aborting"
+    exit 1
+  fi
+}
+
 javadoc_to_gh_pages() {
   version="$(print_project_version)"
   rm -rf javadoc-builddir
   builddir="javadoc-builddir/$version"
 
   # Collect javadoc for all modules
+  # shellcheck disable=SC2044
   for jar in $(find . -name "*${version}-javadoc.jar"); do
+    # shellcheck disable=SC2001
     module="$(echo "$jar" | sed "s~.*/\(.*\)-${version}-javadoc.jar~\1~")"
     this_builddir="$builddir/$module"
     if [ -d "$this_builddir" ]; then
@@ -172,6 +205,7 @@ fi
 ./mvnw install -nsu -Dlicense.skip=true
 
 # formatter errors:
+# shellcheck disable=SC2046
 if [ -z $(git status --porcelain) ];
 then
   echo "No changes detected, all good"
@@ -189,18 +223,21 @@ if is_pull_request; then
 
 # If we are on master, we will deploy the latest snapshot or release version
 #   - If a release commit fails to deploy for a transient reason, delete the broken version from bintray and click rebuild
-elif is_travis_branch_master; then
-  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -pl -:djanta-benchmark -DskipTests deploy
+elif is_master_branch; then
+  #./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -pl -:djanta-benchmark -DskipTests deploy
+  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests deploy
 
   # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
   if is_release_commit; then
-    ./mvnw --batch-mode -s ./.settings.xml -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
+    ./mvnw --batch-mode -s ./.settings.xml -nsu io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
     javadoc_to_gh_pages
   fi
 
 # If we are on a release tag, the following will update any version references and push a version tag for deployment.
 elif build_started_by_tag; then
   safe_checkout_master
+
   # skip license on travis due to #1512
-  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion="$(release_version)" -Darguments="-DskipTests -Dlicense.skip=true" release:prepare
+  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion="$(release_version)" \
+    -Darguments="-DskipTests -Dlicense.skip=true" release:prepare
 fi

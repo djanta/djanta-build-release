@@ -53,3 +53,13 @@ Thumbs.db
 # Editor Files
 *~
 *.swp
+
+# Exclude the script testing folder
+tests
+test
+pom.xml
+**/*.variables
+mvnw
+mvnw.cmd
+
+.snapshot
