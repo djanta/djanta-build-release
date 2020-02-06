@@ -173,7 +173,6 @@ api() {
   [[ ! -f "pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" || \
     colored --red "Maven (POM) file not found in path: $(pwd)"
 
-  pwd
   ls -als
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
@@ -181,7 +180,7 @@ api() {
     export PREV_RELEASE="$NEXT_RELEASE"
   else
     # extract the release version from the pom file
-    version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+    version=`./mvnw -o help:evaluate -f "$(pwd)/pom.xml" -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
     colored --blue "Maven POM Version: ${version}, Current Branch=$(git_current_branch)"
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
