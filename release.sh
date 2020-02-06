@@ -179,7 +179,7 @@ api() {
   colored --yellow "--> Maven (POM) version: $(./mvnw -o help:evaluate -f "$(pwd)/pom.xml" \
     -N -Dexpression=project.version | sed -n '/^[0-9]/p')"
 
-  which xmllint
+  colored --green "--> Project version: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
