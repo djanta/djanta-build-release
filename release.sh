@@ -167,12 +167,15 @@ release__() {
 # shellcheck disable=SC2154
 # shellcheck disable=SC2236
 api() {
+  colored --yellow "[api] ::Maven Project version ::=$(print_project_version)"
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
   else
     # extract the release version from the pom file
     version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+    colored --yellow "[api] :: Maven POM Version ::=${version}"
+
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
