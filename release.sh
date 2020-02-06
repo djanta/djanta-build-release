@@ -103,6 +103,7 @@ merge_release() {
 
 # shellcheck disable=SC2154
 release__() {
+  argv inseparator '--separator' "${@:1:$#}"
   argv inarg '--arg' "${@:1:$#}"
   argv intag '--tag' "${@:1:$#}"
   argv insnapshot '--snapshot' "${@:1:$#}"
@@ -112,7 +113,8 @@ release__() {
   colored --green "[Release] In label=${inlabel}"
 
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
-  [[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
+  #[[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
+  [[ ! -z "$inlabel" ]] && fullversion="${inlabel}${inseparator:-}${tag}" || fullversion=''
   [[ ! -z "$fullversion" ]] && label="-Dtag=${fullversion}" || label=''
   [[ ! -z "$insnapshot" ]] && snapshot="${insnapshot}" || snapshot="$(increment "${tag}")"
 
@@ -141,7 +143,7 @@ release__() {
   # tag the release
   echo "pushing tag ${tag}"
   ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
-    "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
+    "${label}" -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
 
   ## No Sync
   #./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} #\
@@ -196,8 +198,7 @@ api() {
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
-  colored --blue "Tag Version: $tag ,Increment: $(normalize $tag)"
-
+  argv inseparator '--separator' "${@:1:$#}"
   argv inlabel '--label' "${@:1:$#}"
   argv inpatch '--patch' "${@:1:$#}"
   argv insnapshot '--next-snapshot' "${@:1:$#}"
@@ -207,7 +208,10 @@ api() {
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
   
   ## Get starting release process ...
-  release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
+  ##release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
+  ##  --separator="${inseparator}"
+  release__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
+    --separator="${inseparator}"
 }
 
 #Date based versioning
@@ -330,8 +334,8 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
     export_properties .version
   fi
 
-  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
-  colored --blue "Current version: ${inversion}, Current Branch=$(git_current_branch)"
+#  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
+#  colored --blue "Current version: ${inversion}, Current Branch=$(git_current_branch)"
 
   rbranch="${RELEASE_BRANCH:-release}"
   [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
