@@ -132,7 +132,8 @@ release__() {
 
   [[ ! -z $(is_tag_exists "${fullversion}") ]] && error_exit "Following tag: ${fullversion}, has already existed."
 
-  # Update the versions, removing the snapshots, then create a new tag for the release, this will start the travis-ci release process.
+  # Update the versions, removing the snapshots, then create a new tag for the release,
+  # this will start the travis-ci release process.
   ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
@@ -165,10 +166,12 @@ release__() {
   merge_release ## Now merge the working tag branch into master & then push the master
 }
 
+##
 # Incremental versioning
 # shellcheck disable=SC2006
 # shellcheck disable=SC2154
 # shellcheck disable=SC2236
+##
 api() {
   [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" || \
     colored --red "Maven (POM) file not found in path: $(pwd)"
@@ -176,7 +179,8 @@ api() {
   colored --yellow "--> Maven (POM) version: $(./mvnw -o help:evaluate -f "$(pwd)/pom.xml" \
     -N -Dexpression=project.version | sed -n '/^[0-9]/p')"
 
-  #ls -als
+  which xmllint
+
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
@@ -186,11 +190,6 @@ api() {
     colored --blue "Maven POM Version: ${version}, Current Branch=$(git_current_branch)"
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
-
-  #colored --yellow "[api] ::Tag::=${tag}"
-
-  # determine the next snapshot version
-#  snapshot=$(snapshot ${tag})
 
   argv inlabel '--label' "${@:1:$#}"
   argv inpatch '--patch' "${@:1:$#}"
