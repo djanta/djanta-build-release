@@ -176,6 +176,7 @@ api() {
   else
     # extract the release version from the pom file
     version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+    colored --blue "Maven POM Version: ${version}, Current Branch=$(git_current_branch)"
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
