@@ -142,7 +142,8 @@ release__() {
   ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} #\
+  ## No Sync
+  #./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} #\
     #-nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
   # Generate the Github pages ...
