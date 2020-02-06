@@ -191,7 +191,7 @@ get_git_url() {
   echo $(git remote get-url "${1:-origin}")
 }
 
-git_branch() {
+git_current_branch() {
   echo $(git branch | grep \* | cut -d ' ' -f2)
 }
 
@@ -226,10 +226,10 @@ safe_checkout() {
 
 is_master_branch() {
   if [[ $(git branch | grep \* | cut -d ' ' -f2) = master ]]; then
-    #echo "[Publishing] Travis branch is master"
+    #echo "[Publishing] branch is master"
     return 0
   else
-    #echo "[Not Publishing] Travis branch is not master"
+    #echo "[Not Publishing] branch is not master"
     return 1
   fi
 }

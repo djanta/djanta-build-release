@@ -16,8 +16,6 @@
 #   limitations under the License.
 #
 
-# taken from OpenZipkin
-
 set -euo pipefail
 set -x
 

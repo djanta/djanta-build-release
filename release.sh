@@ -27,7 +27,7 @@ esac
 # shellcheck disable=SC1090
 source "${basedir}"/common.sh
 
-if [[ "$#" -eq 0 ]] &&  [[ ! -f ".variables" ]]; then
+if [[ "$#" -eq 0 ]] &&  [[ ! -f ".version" ]]; then
   error_exit "Insuffisant command argument"
 fi
 
@@ -44,25 +44,25 @@ increment() {
   echo "${result}-SNAPSHOT"
 }
 
-safe_checkout() {
-  # We need to be on a branch for release:perform to be able to create commits, and we want that branch to be master.
-  # But we also want to make sure that we build and release exactly the tagged version, so we verify that the remote
-  # master is where our tag is.
-  branch="${1:-master}"
-  git checkout -B "${branch}"
-  git fetch origin "${branch}":origin/"${branch}"
-  commit_local="$(git show --pretty='format:%H' "${branch}")"
-  commit_remote="$(git show --pretty='format:%H' origin/"${branch}")"
-  if [[ "$commit_local" != "$commit_remote" ]]; then
-    echo "${branch} on remote 'origin' has commits since the version under release, aborting"
-    exit 1
-  fi
-}
+#safe_checkout() {
+#  # We need to be on a branch for release:perform to be able to create commits, and we want that branch to be master.
+#  # But we also want to make sure that we build and release exactly the tagged version, so we verify that the remote
+#  # master is where our tag is.
+#  branch="${1:-master}"
+#  git checkout -B "${branch}"
+#  git fetch origin "${branch}":origin/"${branch}"
+#  commit_local="$(git show --pretty='format:%H' "${branch}")"
+#  commit_remote="$(git show --pretty='format:%H' origin/"${branch}")"
+#  if [[ "$commit_local" != "$commit_remote" ]]; then
+#    echo "${branch} on remote 'origin' has commits since the version under release, aborting"
+#    exit 1
+#  fi
+#}
 
-update_release__() {
-  if [[ -f .variables ]]; then
-    colored --blue "Updating next release version in (.variables) file ..."
-    sed -i "s/NEXT_RELEASE=${1}/NEXT_RELEASE=${2}/g" .variables
+update_release() {
+  if [[ -f .version ]]; then
+    colored --blue "Updating next release version in (.version) file ..."
+    sed -i "s/NEXT_RELEASE=${1}/NEXT_RELEASE=${2}/g" .version
   fi
 }
 
@@ -70,16 +70,18 @@ update_release__() {
 # Deploy the given profiles
 # shellcheck disable=SC2116
 ##
-mvn_deploy__() {
+mvn_deploy() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
-  for i in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} -P"$i" -DskipTests=true deploy
+  for profile in "${PROFILES[@]}"; do # access each element of array
+    ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" -P"$profile" -DskipTests=true \
+      deploy
   done
   IFS=' ' # reset to default value after usage
 }
 
-merge_release__() {
+# shellcheck disable=SC2046
+merge_release() {
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
     safe_checkout "master"
@@ -90,22 +92,12 @@ merge_release__() {
       echo "The following files have formatting changes:"
       git status --porcelain
       git merge origin/"${RELEASE_BRANCH}"
-      git push origin $(git_branch)
+      git push origin $(git_current_branch)
     fi
   else
     colored --yellow "[Merger] The release was performed in the current master branch"
   fi
 }
-
-#pom_version() {
-#  if [[ -f "pom.xl" ]]; then
-#    version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-#    return version
-#  else
-#    #return "0.0.1-SNAPSHOT" # default version hand crafted
-#    return ""
-#  fi;
-#}
 
 # shellcheck disable=SC2154
 release__() {
@@ -138,43 +130,43 @@ release__() {
 
   [[ ! -z $(is_tag_exists "${fullversion}") ]] && error_exit "Following tag: ${fullversion}, has already existed."
 
-  # Update the versions, removing the snapshots, then create a new tag for the release,
-  # this will start the travis-ci release process.
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+  # Update the versions, removing the snapshots, then create a new tag for the release, this will start the travis-ci release process.
+  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
     -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
   # Generate the Github pages ...
   #javadoc_to_gh_pages
 
   #Temporally fix to manually deploy (Deploy the new release tag)
-  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after version tag is created
+  mvn_deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+
+  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
     versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
-    -Dmessage="[travis skip] updating versions to next development iteration ${snapshot}"
+    -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
 
-  #Temporally fix to manually deploy (Deploy the new snapshot)
-  mvn_deploy__ #"${inprofile}" "${tag}" # Deploy after snapshot version is created
+  # Temporally fix to manually deploy (Deploy the new snapshot)
+  mvn_deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
-  merge_release__ ## Now merge the working tag branch into master & then push the master
+  merge_release ## Now merge the working tag branch into master & then push the master
 }
 
 # Incremental versioning
 # shellcheck disable=SC2006
 # shellcheck disable=SC2154
 # shellcheck disable=SC2236
-api_version() {
+api() {
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
@@ -194,13 +186,14 @@ api_version() {
   argv inprofile '--profile' "${@:1:$#}"
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
-
+  
+  ## Get starting release process ...
   release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
 }
 
 #Date based versioning
 # shellcheck disable=SC2154
-ts_version() {
+ts() {
   colored --blue "[timestamp] Building version basee release"
 
   argv fulldate '--full-date' "${@:1:$#}"
@@ -297,6 +290,7 @@ else
   [[ ! -z "${RELEASE_STYLE}" ]] && XCMD="$RELEASE_STYLE" || XCMD='--help'
 fi
 
+# shellcheck disable=SC2154
 if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   exists indebug '--debug' "${@:$INDEX:$#}"
   argv insettingfile '--setting-file' "${@:$INDEX:$#}"
@@ -311,10 +305,10 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   [[ -n "${inprofile}" ]] && export MVN_PROFILES="${inprofile}" || colored --yellow "[Option] Maven profiles Off"
   [[ -n "${invarg}" ]] && export MVN_VARG="${invarg}"
 
-  # Load the project given .variables file if any
-  if [[ -f ".variables" ]]; then
-    colored --blue "Exporting .variables file ..."
-    export_properties .variables
+  # Load the project given .version file if any
+  if [[ -f ".version" ]]; then
+    colored --blue "Exporting .version file ..."
+    export_properties .version
   fi
 
   colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}"
@@ -323,7 +317,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
 
   # Check if we start the tag release from from the expected branch.
-  [[ "${RELEASE_BRANCH}" != "$(git_branch)" ]] && error_exit "Expecting release should be: \"${RELEASE_BRANCH}\""
+  [[ "${RELEASE_BRANCH}" != "$(git_current_branch)" ]] && error_exit "Expecting release should be: \"${RELEASE_BRANCH}\""
 fi
 
 case ${XCMD} in
@@ -332,10 +326,10 @@ case ${XCMD} in
     graceful_exit ${?}
     ;;
   timestamp|ts|--timestamp|--ts)
-    XCMD="ts_version"
+    XCMD="ts"
     ;;
   api|--api|--increment|increment)
-    XCMD="api_version"
+    XCMD="api"
     ;;
 esac
 
