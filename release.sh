@@ -311,7 +311,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
     export_properties .version
   fi
 
-  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}"
+  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
 
   rbranch="${RELEASE_BRANCH:-release}"
   [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
