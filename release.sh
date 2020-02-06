@@ -87,11 +87,13 @@ merge_release() {
     safe_checkout "master"
     if [[ -z $(git status --porcelain) ]];
     then
-      echo "No changes detected, all good"
+      colored --yellow "No changes detected, all good"
     else
-      echo "The following files have formatting changes:"
+      colored --green "The following files have formatting changes:"
       git status --porcelain
       git merge origin/"${RELEASE_BRANCH}"
+
+      colored --green "Merging from: $(git_current_branch) to: ${RELEASE_BRANCH}"
       git push origin $(git_current_branch)
     fi
   else
@@ -141,7 +143,7 @@ release__() {
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
   ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
-    -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
+    -nsu #-N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
   # Generate the Github pages ...
   #javadoc_to_gh_pages
@@ -167,19 +169,16 @@ release__() {
 # shellcheck disable=SC2154
 # shellcheck disable=SC2236
 api() {
-  colored --yellow "[api] ::Maven Project version ::=$(print_project_version)"
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
   else
     # extract the release version from the pom file
     version=`./mvnw -o help:evaluate -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-    colored --yellow "[api] :: Maven POM Version ::=${version}"
-
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
-  colored --yellow "[api] ::Tag::=${tag}"
+  #colored --yellow "[api] ::Tag::=${tag}"
 
   # determine the next snapshot version
 #  snapshot=$(snapshot ${tag})
@@ -199,7 +198,7 @@ api() {
 #Date based versioning
 # shellcheck disable=SC2154
 ts() {
-  colored --blue "[timestamp] Building version basee release"
+  colored --blue "[timestamp] Building version base release"
 
   argv fulldate '--full-date' "${@:1:$#}"
   argv informat '--format' "${@:1:$#}"
