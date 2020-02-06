@@ -173,7 +173,10 @@ api() {
   [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" || \
     colored --red "Maven (POM) file not found in path: $(pwd)"
 
-  cat "$(pwd)/pom.xml"
+  #cat "$(pwd)/pom.xml"
+
+  v=$(mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version)
+  colored --red "--> Maven (POM) version: $v"
 
   #ls -als
   if [[ ! -z "$NEXT_RELEASE" ]]; then
