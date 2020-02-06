@@ -180,7 +180,7 @@ api() {
     -N -Dexpression=project.version | sed -n '/^[0-9]/p')"
 
   colored --green "--> Project version: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
-  colored --green "--> Project version: $(mvn -o help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout| grep -e '^[^\[]')"
+  colored --green "--> Project version: $(mvn -o help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
@@ -188,7 +188,7 @@ api() {
   else
     # extract the release version from the pom file
     #version=`./mvnw -o help:evaluate -f "$(pwd)/pom.xml" -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-    version=`mvn -o help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout| grep -e '^[^\[]'`
+    version=`mvn -o help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]'`
     colored --blue "Maven POM Version: ${version}, Current Branch=$(git_current_branch)"
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
