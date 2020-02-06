@@ -176,11 +176,11 @@ api() {
   [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" || \
     colored --red "Maven (POM) file not found in path: $(pwd)"
 
-  colored --yellow "--> Maven (POM) version: $(./mvnw -o help:evaluate -f "$(pwd)/pom.xml" \
+  colored --yellow "--> Maven (POM) version: $(mvn -o -B help:evaluate -f "$(pwd)/pom.xml" \
     -N -Dexpression=project.version | sed -n '/^[0-9]/p')"
 
-  colored --green "--> Project version: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
-  colored --green "--> Project version: $(mvn -o help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
+  colored --green "--> Project version: $(mvn -o -B help:evaluate -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
+  #colored --green "--> Project version: $(mvn -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
@@ -188,8 +188,7 @@ api() {
   else
     # extract the release version from the pom file
     #version=`./mvnw -o help:evaluate -f "$(pwd)/pom.xml" -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-    version=`mvn -o help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]'`
-    colored --blue "Maven POM Version: ${version}, Current Branch=$(git_current_branch)"
+    version=`mvn -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]'`
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
@@ -202,7 +201,7 @@ api() {
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
   
   ## Get starting release process ...
-  release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
+  ##release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}"
 }
 
 #Date based versioning
@@ -326,6 +325,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   fi
 
   colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
+  colored --blue "Current version: ${inversion}, Current Branch=$(git_current_branch)"
 
   rbranch="${RELEASE_BRANCH:-release}"
   [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
