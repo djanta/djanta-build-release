@@ -176,6 +176,8 @@ api() {
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
 
+  colored --yellow "[api] ::Tag::=${tag}"
+
   # determine the next snapshot version
 #  snapshot=$(snapshot ${tag})
 
