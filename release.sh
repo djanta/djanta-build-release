@@ -74,7 +74,7 @@ mvn_deploy() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" -P"$profile" -DskipTests=true \
+    ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} -P"$profile" -DskipTests=true \
       deploy
   done
   IFS=' ' # reset to default value after usage
@@ -131,16 +131,16 @@ release__() {
   [[ ! -z $(is_tag_exists "${fullversion}") ]] && error_exit "Following tag: ${fullversion}, has already existed."
 
   # Update the versions, removing the snapshots, then create a new tag for the release, this will start the travis-ci release process.
-  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     "${label}" -Dmvn.tag.prefix="${inlabel}-" scm:tag
 
-  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
   # Generate the Github pages ...
@@ -152,7 +152,7 @@ release__() {
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
 
-  ./mvnw "${MVN_BASHMODE:-}" "${MVN_DEBUG:-}" "${MVN_VARG:-}" "${MVN_SETTINGS:-}" \
+  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
     versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
 
