@@ -170,9 +170,10 @@ release__() {
 # shellcheck disable=SC2154
 # shellcheck disable=SC2236
 api() {
-  [[ ! -f "pom.xml" ]] && colored --green "Maven (POM) file exists on path: $PATH" || \
-    colored --red "Maven (POM) file not found in path: $PATH"
+  [[ ! -f "pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" || \
+    colored --red "Maven (POM) file not found in path: $(pwd)"
 
+  pwd
   ls -als
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
