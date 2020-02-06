@@ -173,24 +173,30 @@ release__() {
 # shellcheck disable=SC2236
 ##
 api() {
-  [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" || \
-    colored --red "Maven (POM) file not found in path: $(pwd)"
-
-  colored --yellow "--> Maven (POM) version: $(mvn -o -B help:evaluate -f "$(pwd)/pom.xml" \
-    -N -Dexpression=project.version | sed -n '/^[0-9]/p')"
-
-  colored --green "--> Project version: $(mvn -o -B help:evaluate -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
-  #colored --green "--> Project version: $(mvn -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]')"
+  [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" \
+    || colored --red "Maven (POM) file not found in path: $(pwd)"
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
   else
+    [[ -f "$(pwd)/.snapshot" ]] && colored --yellow "Removing : $(pwd)/.snapshot" && rm -v "$(pwd)/.snapshot" && \
+      mvn -B -q clean validate help:evaluate ${MVN_SETTINGS:-} && colored --cyan "POM Snapshot: $(cat $(pwd)/.snapshot)" \
+      || mvn -B -q clean validate help:evaluate ${MVN_SETTINGS:-}
+
     # extract the release version from the pom file
-    #version=`./mvnw -o help:evaluate -f "$(pwd)/pom.xml" -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
-    version=`mvn -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]'`
+    [[ -f "$(pwd)/.snapshot" ]] && version=$(cat $(pwd)/.snapshot) && version=$(printf '%s\n' "${version//"-SNAPSHOT"/}") \
+      || version=`./mvnw -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout`
+
+    ## Make sure we remove the snapshot file ...
+    rm "$(pwd)/.snapshot"
+
+    #version=`./mvnw -o -B help:evaluate -f "$(pwd)/pom.xml" -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
+    #version=`mvn -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]'`
     tag=`echo "${version}" | cut -d'-' -f 1`
   fi
+
+  colored --blue "Tag Version: $tag ,Increment: $(normalize $tag)"
 
   argv inlabel '--label' "${@:1:$#}"
   argv inpatch '--patch' "${@:1:$#}"

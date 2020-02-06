@@ -129,6 +129,13 @@ die() {
 #  done
 #}
 
+# shellcheck disable=SC2006
+normalize() {
+  local version=$1
+  result=`echo "${version}" | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}'`
+  echo "${result}"
+}
+
 #value(){
 # shellcheck disable=SC2006
 argv() {
