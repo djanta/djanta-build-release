@@ -71,37 +71,45 @@ update_release() {
 # shellcheck disable=SC2116
 ##
 deploy() {
+  colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
+
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw -ff --errors ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P"$profile" -DskipTests=true deploy
+    deploy="-ff --errors ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P"$profile" -DskipTests=true deploy"
+    colored --cyan "[deploy] - deploying with command: $deploy"
+    ./mvnw $deploy
   done
   IFS=' ' # reset to default value after usage
 }
 
 # shellcheck disable=SC2046
 rebase() {
+  colored --yellow "[rebase] - About to rebase from branch: $(git_current_branch)"
+
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
     safe_checkout "master"
     if [[ -z $(git status --porcelain) ]];
     then
-      colored --yellow "No changes detected, all good"
+      colored --yellow "[rebase] - No changes detected, all good"
     else
-      colored --green "The following files have formatting changes:"
+      colored --green "[rebase] - The following files have formatting changes:"
       git status --porcelain
       git merge origin/"${RELEASE_BRANCH}"
 
-      colored --green "Merging from: $(git_current_branch) to: ${RELEASE_BRANCH}"
+      colored --green "[rebase] - Merging from: $(git_current_branch) to: ${RELEASE_BRANCH}"
       git push origin $(git_current_branch)
     fi
   else
-    colored --yellow "[Merger] The release was performed in the current master branch"
+    colored --yellow "[rebase] - The release was performed in the current master branch"
   fi
 }
 
 # shellcheck disable=SC2154
 __tag__() {
+  colored --yellow "[tag] - About to tag from branch: $(git_current_branch)"
+
   argv inseparator '--separator' "${@:1:$#}"
   argv inarg '--arg' "${@:1:$#}"
   argv intag '--tag' "${@:1:$#}"
@@ -109,7 +117,7 @@ __tag__() {
   argv inlabel '--tag-prefix' "${@:1:$#}"
   argv inprofile '--profile' "${@:1:$#}"
 
-  colored --green "[Release] In label=${inlabel}"
+  colored --green "[tag] - In label=${inlabel}"
 
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
   #[[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
@@ -136,13 +144,11 @@ __tag__() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
-  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
-    versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
-  echo "pushing tag ${tag}"
-  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
-    "${label}" -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
+  echo "pushing tag ${tag} with command: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${label} -Dmvn.tag.prefix=${inlabel}${inseparator:-} scm:tag"
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} "${label}" -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
 
   ## No Sync
   #./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} #\
@@ -151,19 +157,23 @@ __tag__() {
   # Generate the Github pages ...
   #javadoc_to_gh_pages
 
+  # deploy tag
+  echo "deploying tag: ${tag}"
   #Temporally fix to manually deploy (Deploy the new release tag)
   deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
-
-  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
-    versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
 
+  # deploy tag
+  echo "deploying snapshot: ${tag}"
   # Temporally fix to manually deploy (Deploy the new snapshot)
   deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
+  # deploy tag
+  echo "rebasing to master: ${tag}"
   ## Now merge the working tag branch into master & then push the master
   rebase --release-branch="${RELEASE_BRANCH}"
 }
