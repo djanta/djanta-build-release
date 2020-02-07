@@ -205,12 +205,15 @@ api() {
   argv inprofile '--profile' "${@:1:$#}"
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
-  
+
+  colored --yellow "Arguments: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-}"
+
   ## Get starting release process ...
   ##release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
   ##  --separator="${inseparator}"
-  release__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
-    --separator="${inseparator}"
+
+  #release__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
+  #  --separator="${inseparator}"
 }
 
 #Date based versioning
