@@ -74,7 +74,7 @@ mvn_deploy() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
-    ./mvnw -ff --errors ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} -P"$profile" -DskipTests=true deploy
+    ./mvnw -ff --errors ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P"$profile" -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
 }
@@ -136,13 +136,13 @@ release__() {
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
     versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
     -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
     "${label}" -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
 
   ## No Sync
@@ -158,7 +158,7 @@ release__() {
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
 
-  ./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} \
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
     versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
     -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
 
@@ -175,17 +175,17 @@ release__() {
 # shellcheck disable=SC2236
 ##
 api() {
-  [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" \
-    || colored --red "Maven (POM) file not found in path: $(pwd)"
+  [[ -f "$(pwd)/pom.xml" ]] && colored --green "[api] - Maven (POM) file exists on path: $(pwd)" \
+    || colored --red "[api] - Maven (POM) file not found in path: $(pwd)"
 
-  colored --yellow "[api]- arguments: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-}"
+  colored --yellow "[api] - arguments:${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-}"
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
   else
-    [[ -f "$(pwd)/.snapshot" ]] && colored --yellow "Removing : $(pwd)/.snapshot" && rm -v "$(pwd)/.snapshot" && \
-      mvn -B -q clean validate help:evaluate ${MVN_SETTINGS:-} && colored --cyan "POM Snapshot: $(cat $(pwd)/.snapshot)" \
+    [[ -f "$(pwd)/.snapshot" ]] && colored --yellow "[api] - Removing : $(pwd)/.snapshot" && rm -v "$(pwd)/.snapshot" && \
+      mvn -B -q clean validate help:evaluate ${MVN_SETTINGS:-} && colored --cyan "[api] - POM Snapshot: $(cat $(pwd)/.snapshot)" \
       || mvn -B -q clean validate help:evaluate ${MVN_SETTINGS:-}
 
     # extract the release version from the pom file
