@@ -131,7 +131,8 @@ release__() {
   colored --green "[Release] Extra Arg=${tag}"
   colored --green "[Release] Full version: ${fullversion}"
 
-  [[ ! -z $(is_tag_exists "${fullversion}") ]] && error_exit "Following tag: ${fullversion}, has already existed."
+  [[ ! -z $(is_tag_exists "${fullversion}") ]] && colored --green "[Release] Following tag: ${fullversion}, already exist" \
+    && error_exit "Following tag: ${fullversion}, has already existed."
 
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
@@ -177,6 +178,8 @@ api() {
   [[ -f "$(pwd)/pom.xml" ]] && colored --green "Maven (POM) file exists on path: $(pwd)" \
     || colored --red "Maven (POM) file not found in path: $(pwd)"
 
+  colored --yellow "[api]- arguments: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-}"
+
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
@@ -205,8 +208,6 @@ api() {
   argv inprofile '--profile' "${@:1:$#}"
 
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
-
-  colored --yellow "Arguments: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-}"
 
   ## Get starting release process ...
   ##release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
