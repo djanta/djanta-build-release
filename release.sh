@@ -213,8 +213,8 @@ api() {
   ##release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
   ##  --separator="${inseparator}"
 
-  #release__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
-  #  --separator="${inseparator}"
+  release__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
+    --separator="${inseparator}"
 }
 
 #Date based versioning
