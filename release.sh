@@ -321,13 +321,14 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   argv invarg '--varg' "${@:$INDEX:$#}"
   argv inrbranch '--release-branch' "${@:$INDEX:$#}"
 
+  colored --blue "[Option] Maven settings: ${insettingfile}"
+  colored --blue "[Option] Maven Profile: ${inprofile}"
+
   [[ "${inbashmodel}" ]] && export MVN_BASHMODE="-B" || colored --yellow "[Option] Maven bash mode Off"
   [[ "${indebug}" ]] && export MVN_DEBUG="-X" || colored --red "[Option] Maven debug Off"
-  [[ -f "${insettingfile}" ]] && export MVN_SETTINGS="-s ${insettingfile}" && \
-    colored --blue "[Option] Maven settings: ${insettingfile}" || colored --yellow "[Option] Maven settings Off"
+  [[ -f "${insettingfile}" ]] && export MVN_SETTINGS="-s ${insettingfile}" || colored --yellow "[Option] Maven settings Off"
 
-  [[ -n "${inprofile}" ]] && export MVN_PROFILES="${inprofile}" && \
-    colored --blue "[Option] Maven Profile: ${inprofile}" || colored --yellow "[Option] Maven profiles Off"
+  [[ -n "${inprofile}" ]] && export MVN_PROFILES="${inprofile}" || colored --yellow "[Option] Maven profiles Off"
 
   [[ -n "${invarg}" ]] && export MVN_VARG="${invarg}"
 
