@@ -61,5 +61,5 @@ pom.xml
 **/*.variables
 mvnw
 mvnw.cmd
-
+parent.xml
 .snapshot

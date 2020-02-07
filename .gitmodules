@@ -1,0 +1,4 @@
+[submodule ".mvn"]
+	path = .mvn
+	url = https://github.com/djanta/djanta-java-maven.git
+	branch = master
