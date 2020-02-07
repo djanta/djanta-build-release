@@ -314,9 +314,10 @@ fi
 
 # shellcheck disable=SC2154
 if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
-  exists indebug '--debug' "${@:$INDEX:$#}"
-  argv insettingfile '--setting-file' "${@:$INDEX:$#}"
   exists inbashmodel '--bash-mode' "${@:$INDEX:$#}"
+  exists indebug '--debug' "${@:$INDEX:$#}"
+
+  argv insettingfile '--setting-file' "${@:$INDEX:$#}"
   argv inprofile '--profile' "${@:$INDEX:$#}"
   argv invarg '--varg' "${@:$INDEX:$#}"
   argv inrbranch '--release-branch' "${@:$INDEX:$#}"
@@ -329,7 +330,6 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
   [[ -f "${insettingfile}" ]] && export MVN_SETTINGS="-s ${insettingfile}" || colored --yellow "[Option] Maven settings Off"
 
   [[ -n "${inprofile}" ]] && export MVN_PROFILES="${inprofile}" || colored --yellow "[Option] Maven profiles Off"
-
   [[ -n "${invarg}" ]] && export MVN_VARG="${invarg}"
 
   # Load the project given .version file if any
@@ -338,8 +338,8 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
     export_properties .version
   fi
 
-#  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
-#  colored --blue "Current version: ${inversion}, Current Branch=$(git_current_branch)"
+  colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
+  colored --blue "Current version: ${inversion}, Current Branch=$(git_current_branch)"
 
   rbranch="${RELEASE_BRANCH:-release}"
   [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
