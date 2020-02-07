@@ -70,7 +70,7 @@ update_release() {
 # Deploy the given profiles
 # shellcheck disable=SC2116
 ##
-mvn_deploy() {
+deploy() {
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
@@ -80,7 +80,7 @@ mvn_deploy() {
 }
 
 # shellcheck disable=SC2046
-merge_release() {
+rebase() {
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
     safe_checkout "master"
@@ -101,7 +101,7 @@ merge_release() {
 }
 
 # shellcheck disable=SC2154
-release__() {
+__tag__() {
   argv inseparator '--separator' "${@:1:$#}"
   argv inarg '--arg' "${@:1:$#}"
   argv intag '--tag' "${@:1:$#}"
@@ -137,8 +137,7 @@ release__() {
   # Update the versions, removing the snapshots, then create a new tag for the release,
   # this will start the travis-ci release process.
   ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
-    versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false \
-    -Dmessage="prepare release ${tag}" -DpushChanges=false
+    versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
   echo "pushing tag ${tag}"
@@ -146,14 +145,14 @@ release__() {
     "${label}" -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
 
   ## No Sync
-  #./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${MVN_SETTINGS:-} #\
+  #./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} #\
     #-nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
   # Generate the Github pages ...
   #javadoc_to_gh_pages
 
   #Temporally fix to manually deploy (Deploy the new release tag)
-  mvn_deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
+  deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
   echo "pushing snapshot ${snapshot}"
@@ -163,9 +162,10 @@ release__() {
     -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
 
   # Temporally fix to manually deploy (Deploy the new snapshot)
-  mvn_deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
+  deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
-  merge_release ## Now merge the working tag branch into master & then push the master
+  ## Now merge the working tag branch into master & then push the master
+  rebase --release-branch="${RELEASE_BRANCH}"
 }
 
 ##
@@ -210,11 +210,7 @@ api() {
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
 
   ## Get starting release process ...
-  ##release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot}" --arg="${invarg:-}" \
-  ##  --separator="${inseparator}"
-
-  release__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
-    --separator="${inseparator}"
+  __tag__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" --separator="${inseparator}"
 }
 
 #Date based versioning
@@ -253,7 +249,7 @@ ts() {
   # shellcheck disable=SC2154
   [[ ! -z "${innextsnapshot}" ]] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
 
-  release__ --tag="${tag}" --tag-prefix="${inlabel:-release}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
+  __tag__ --tag="${tag}" --tag-prefix="${inlabel:-}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
 }
 
 help_message () {
