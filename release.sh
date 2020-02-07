@@ -178,7 +178,7 @@ api() {
   [[ -f "$(pwd)/pom.xml" ]] && colored --green "[api] - Maven (POM) file exists on path: $(pwd)" \
     || colored --red "[api] - Maven (POM) file not found in path: $(pwd)"
 
-  colored --yellow "[api] - arguments:${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-}"
+  colored --yellow "[api] - arguments: ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-}"
 
   if [[ ! -z "$NEXT_RELEASE" ]]; then
     tag="$NEXT_RELEASE"
