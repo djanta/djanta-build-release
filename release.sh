@@ -85,7 +85,7 @@ deploy() {
 
 # shellcheck disable=SC2046
 rebase() {
-  colored --yellow "[rebase] - About to rebase from branch: $(git_current_branch)"
+  colored --yellow "[rebase] - About to rebase from branch: $(git_current_branch), is master branch: $(is_master_branch)"
 
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
@@ -102,7 +102,7 @@ rebase() {
       git push origin $(git_current_branch)
     fi
   else
-    colored --yellow "[rebase] - The release was performed in the current master branch"
+    colored --yellow "[rebase] - The release could not be performed in branch: $(git_current_branch)"
   fi
 }
 
@@ -171,7 +171,6 @@ __tag__() {
   # Temporally fix to manually deploy (Deploy the new snapshot)
   deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
-  # deploy tag
   echo "rebasing to master: ${tag}"
   ## Now merge the working tag branch into master & then push the master
   rebase --release-branch="${RELEASE_BRANCH}"
