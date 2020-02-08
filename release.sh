@@ -159,23 +159,23 @@ __tag__() {
   #javadoc_to_gh_pages
 
   # deploy tag
-#  echo "deploying tag: ${tag}"
+  echo "deploying tag: ${tag}"
   #Temporally fix to manually deploy (Deploy the new release tag)
-#  deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
+  deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   # Update the versions to the next snapshot
-#  echo "pushing snapshot ${snapshot}"
-#  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
-#    -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
+  echo "pushing snapshot ${snapshot}"
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
+    -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
 
   # deploy tag
-#  echo "deploying snapshot: ${tag}"
+  echo "deploying snapshot: ${tag}"
   # Temporally fix to manually deploy (Deploy the new snapshot)
-#  deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
+  deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 
-  ##echo "rebasing to master: ${tag}"
+#  echo "rebasing to master: ${tag}"
   ## Now merge the working tag branch into master & then push the master
-  #rebase --release-branch="${RELEASE_BRANCH}"
+#  rebase --release-branch="${RELEASE_BRANCH}"
 }
 
 ##
