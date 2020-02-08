@@ -175,7 +175,7 @@ __tag__() {
 
   echo "rebasing to master: ${tag}"
   ## Now merge the working tag branch into master & then push the master
-  rebase --release-branch="${RELEASE_BRANCH}"
+  #rebase --release-branch="${RELEASE_BRANCH}"
 }
 
 ##
