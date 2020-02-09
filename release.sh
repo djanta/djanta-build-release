@@ -347,6 +347,7 @@ if [[ "${XCMD}" != "--help" ]] && [[ "${XCMD}" != "-h" ]]; then
 
   colored --blue "Release branch: ${inrbranch}, Debug=${MVN_DEBUG}, Current Branch=$(git_current_branch)"
   colored --blue "Current version: ${inversion}, Current Branch=$(git_current_branch)"
+  colored --blue "Settings: ${MVN_SETTINGS}, for Branch=$(git_current_branch)"
 
   rbranch="${RELEASE_BRANCH:-release}"
   [[ ! -z "${inrbranch}" ]] && export RELEASE_BRANCH="${inrbranch}" || export RELEASE_BRANCH="${rbranch}"
