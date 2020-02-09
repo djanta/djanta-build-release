@@ -82,7 +82,7 @@ deploy() {
     colored --cyan "[deploy] - deploying with command: ${deploy_cmd}"
     #./mvnw ${deploy_cmd}
     #./mvnw    --settings /Users/stanislas/.m2/settings.xml -P${profile} -Dlicense.failIfMissing -DskipTests=true clean deploy
-    ./mvnw "${MVN_BASHMODE:-}" ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-} -DskipTests=true clean deploy
+    ./mvnw `${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-}` -DskipTests=true clean deploy
   done
   IFS=' ' # reset to default value after usage
 }
