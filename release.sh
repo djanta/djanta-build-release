@@ -73,7 +73,7 @@ deploy() {
   colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
 
 #  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
-  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Pgithub,release -DskipTests=true clean deploy
+  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true clean deploy
 
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
