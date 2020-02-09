@@ -80,7 +80,7 @@ deploy() {
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
     deploy_cmd="${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P$profile -DskipTests=true deploy"
-    colored --cyan "[deploy] - deploying with command: $deploy_cmd"
+    #colored --cyan "[deploy] - deploying with command: $deploy_cmd"
 #    $(./mvnw ${deploy_cmd} -DskipTests=true deploy)
     __run__ ${deploy_cmd} -DskipTests=true deploy
   done
