@@ -65,6 +65,10 @@ update_release() {
   fi
 }
 
+__run__() {
+  ./mvnw "$@"
+}
+
 ###
 # Deploy the given profiles
 # shellcheck disable=SC2116
@@ -77,7 +81,8 @@ deploy() {
   for profile in "${PROFILES[@]}"; do # access each element of array
     deploy_cmd="${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P$profile -DskipTests=true deploy"
     colored --cyan "[deploy] - deploying with command: $deploy_cmd"
-    $(./mvnw ${deploy_cmd} -DskipTests=true deploy)
+#    $(./mvnw ${deploy_cmd} -DskipTests=true deploy)
+    __run__ ${deploy_cmd} -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
 }
