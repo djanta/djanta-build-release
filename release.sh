@@ -76,15 +76,17 @@ __run__() {
 deploy() {
   colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
 
-  IFS=';' # hyphen (;) is set as delimiter
-  read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
-  for profile in "${PROFILES[@]}"; do # access each element of array
-    deploy_cmd="${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P$profile -DskipTests=true deploy"
-    #colored --cyan "[deploy] - deploying with command: $deploy_cmd"
-#    $(./mvnw ${deploy_cmd} -DskipTests=true deploy)
-    __run__ ${deploy_cmd} --settings /Users/stanislas/.m2/settings.xml -DskipTests=true deploy
-  done
-  IFS=' ' # reset to default value after usage
+  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
+  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Pgithub,release -DskipTests=true deploy
+
+#  IFS=';' # hyphen (;) is set as delimiter
+#  read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
+#  for profile in "${PROFILES[@]}"; do # access each element of array
+#    deploy_cmd="${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P$profile -DskipTests=true deploy"
+#    colored --cyan "[deploy] - deploying with command: $deploy_cmd"
+#    ./mvnw ${deploy_cmd} -DskipTests=true deploy
+#  done
+#  IFS=' ' # reset to default value after usage
 }
 
 # shellcheck disable=SC2046
