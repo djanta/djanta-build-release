@@ -65,10 +65,6 @@ update_release() {
   fi
 }
 
-__run__() {
-  ./mvnw -B "$@"
-}
-
 ###
 # Deploy the given profiles
 # shellcheck disable=SC2116
@@ -77,16 +73,16 @@ deploy() {
   colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
 
 #  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
-  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Pgithub,release -DskipTests=true deploy
+  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Pgithub,release -DskipTests=true clean deploy
 
-#  IFS=';' # hyphen (;) is set as delimiter
-#  read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
-#  for profile in "${PROFILES[@]}"; do # access each element of array
-#    deploy_cmd="${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P$profile -DskipTests=true deploy"
-#    colored --cyan "[deploy] - deploying with command: $deploy_cmd"
+  IFS=';' # hyphen (;) is set as delimiter
+  read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
+  for profile in "${PROFILES[@]}"; do # access each element of array
+    deploy_cmd="./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} -P${profile} ${MVN_VARG:-} -DskipTests=true clean deploy"
+    colored --cyan "[deploy] - deploying with command: ${deploy_cmd}"
 #    ./mvnw ${deploy_cmd} -DskipTests=true deploy
-#  done
-#  IFS=' ' # reset to default value after usage
+  done
+  IFS=' ' # reset to default value after usage
 }
 
 # shellcheck disable=SC2046
@@ -179,7 +175,7 @@ __tag__() {
 
 #  echo "rebasing to master: ${tag}"
   ## Now merge the working tag branch into master & then push the master
-#  rebase --release-branch="${RELEASE_BRANCH}"
+  rebase --release-branch="${RELEASE_BRANCH}"
 }
 
 ##
