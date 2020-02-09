@@ -82,7 +82,7 @@ deploy() {
 #  done
 #  IFS=' ' # reset to default value after usage
 
-  ./mvnw -B -X -s "/Volumes/Glacier/Liberty/Projects/djantaio/java/djanta-java-parent/.mvn/settings.xml" -DskipTests=true deploy
+  ./mvnw -B -X -s "/Users/stanislas/.m2/settings.xml" -DskipTests=true deploy
 }
 
 # shellcheck disable=SC2046
