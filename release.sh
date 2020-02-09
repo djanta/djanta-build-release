@@ -76,7 +76,7 @@ __run__() {
 deploy() {
   colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
 
-  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
+#  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
   ./mvnw --settings /Users/stanislas/.m2/settings.xml -Pgithub,release -DskipTests=true deploy
 
 #  IFS=';' # hyphen (;) is set as delimiter
