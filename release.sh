@@ -79,7 +79,7 @@ deploy() {
     DEPLOY=${DEPLOY}"./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-} -DskipTests=true clean deploy && "
   done
   IFS=' ' # reset to default value after usage
-  DEPLOY=${DEPLOY}"colored --green [deploy] - Done!"
+  DEPLOY=${DEPLOY}"echo 'Done!'"
 
   colored --blue "[deploy] - ${DEPLOY}"
   eval $DEPLOY

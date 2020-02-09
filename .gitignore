@@ -62,4 +62,7 @@ pom.xml
 mvnw
 mvnw.cmd
 parent.xml
-.snapshot
+
+**/*/*.snapshot
+
+**/*/target
