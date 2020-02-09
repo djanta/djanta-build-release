@@ -66,7 +66,7 @@ update_release() {
 }
 
 __run__() {
-  ./mvnw "$@"
+  ./mvnw -B "$@"
 }
 
 ###
