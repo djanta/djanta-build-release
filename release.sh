@@ -195,15 +195,16 @@ api() {
     export PREV_RELEASE="$NEXT_RELEASE"
   else
     [[ -f "$(pwd)/.snapshot" ]] && colored --yellow "[api] - Removing : $(pwd)/.snapshot" && rm -v "$(pwd)/.snapshot" && \
-      mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} && colored --cyan "[api] - POM Snapshot: $(cat $(pwd)/.snapshot)" \
-      || mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-}
+      mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} -DexportVersion=true \
+        && colored --cyan "[api] - POM Snapshot: $(cat $(pwd)/.snapshot)" \
+        || mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} -DexportVersion=true
 
     # extract the release version from the pom file
     [[ -f "$(pwd)/.snapshot" ]] && version=$(cat $(pwd)/.snapshot) && version=$(printf '%s\n' "${version//"-SNAPSHOT"/}") \
       || version=`./mvnw -B help:evaluate -N -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout`
 
     ## Make sure we remove the snapshot file ...
-    rm "$(pwd)/.snapshot"
+    rm -fv "$(pwd)/.snapshot"
 
     #version=`./mvnw -o -B help:evaluate -f "$(pwd)/pom.xml" -N -Dexpression=project.version | sed -n '/^[0-9]/p'`
     #version=`mvn -o -B help:evaluate -f "$(pwd)/pom.xml" -Dexpression=project.version -q -DforceStdout | grep -e '^[^\[]'`
