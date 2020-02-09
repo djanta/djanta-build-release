@@ -73,14 +73,14 @@ deploy() {
   colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
 
 #  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
-  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true clean deploy
+#  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true clean deploy
 
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
     deploy_cmd="./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-} -DskipTests=true clean deploy"
     colored --cyan "[deploy] - deploying with command: ${deploy_cmd}"
-#    ./mvnw ${deploy_cmd}
+    ./mvnw ${deploy_cmd}
   done
   IFS=' ' # reset to default value after usage
 }
