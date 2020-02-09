@@ -75,16 +75,20 @@ deploy() {
 #  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true deploy
 #  ./mvnw --settings /Users/stanislas/.m2/settings.xml -Psonatype,release -DskipTests=true clean deploy
 
+  DEPLOY=""
   IFS=';' # hyphen (;) is set as delimiter
   read -ra PROFILES <<< "${MVN_PROFILES:-}" # str is read into an array as tokens separated by IFS
   for profile in "${PROFILES[@]}"; do # access each element of array
     deploy_cmd="${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-} -DskipTests=true clean deploy"
-    colored --cyan "[deploy] - deploying with command: ${deploy_cmd}"
-    #./mvnw ${deploy_cmd}
+    #colored --cyan "[deploy] - deploying with command: ${deploy_cmd}"
     #./mvnw    --settings /Users/stanislas/.m2/settings.xml -P${profile} -Dlicense.failIfMissing -DskipTests=true clean deploy
-    ./mvnw `${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-}` -DskipTests=true clean deploy
+    DEPLOY=${DEPLOY}"./mvnw ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_SETTINGS:-} -P${profile} ${MVN_VARG:-} -DskipTests=true clean deploy && "
   done
   IFS=' ' # reset to default value after usage
+  DEPLOY=${DEPLOY}" echo 'done!'"
+
+  colored --blue "[deploy] - ${DEPLOY}"
+  $(DEPLOY)
 }
 
 # shellcheck disable=SC2046
