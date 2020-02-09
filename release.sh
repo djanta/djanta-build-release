@@ -77,12 +77,9 @@ deploy() {
   for profile in "${PROFILES[@]}"; do # access each element of array
     deploy_cmd="${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -P$profile -DskipTests=true deploy"
     colored --cyan "[deploy] - deploying with command: $deploy_cmd"
-    #./mvnw -s "/Volumes/Glacier/Liberty/Projects/djantaio/java/djanta-java-parent/.mvn/settings.xml" $deploy_cmd
     ./mvnw -B -X -s $deploy_cmd -DskipTests=true deploy
   done
   IFS=' ' # reset to default value after usage
-
-#  ./mvnw -B -X -s "/Users/stanislas/.m2/settings.xml" -DskipTests=true deploy
 }
 
 # shellcheck disable=SC2046
