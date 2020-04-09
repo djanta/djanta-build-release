@@ -93,16 +93,15 @@ switch_to() {
 
   colored --yellow "[switch] - About to rebase from branch: ${releasebranch}, isMaster? : $(is_master_branch)"
 
+  git fetch --prune --all # Fetch & prune all
   git pull origin # Pull from the current origin branch
 
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
-    git fetch --prune --all # Fetch & prune all
-
-    git remote show origin
     colored --blue "[switch] - Checking out branch master"
 
-    safe_checkout "master"
+    #safe_checkout "master"
+    git checkout "master"
     git pull origin # Pull from the remote origin
 
     if [[ -z $(git status --porcelain) ]];
