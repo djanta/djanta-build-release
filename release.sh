@@ -91,26 +91,30 @@ switch_to() {
 
   [[ ! -z "$inreleasebranch" ]] && releasebranch="${inreleasebranch}" || releasebranch="${RELEASE_BRANCH}"
 
-  colored --yellow "[rebase] - About to rebase from branch: ${releasebranch}, isMaster? : $(is_master_branch)"
+  colored --yellow "[switch] - About to rebase from branch: ${releasebranch}, isMaster? : $(is_master_branch)"
 
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
+    git fetch --prune --all # Fetch & prune all
+
     safe_checkout "master"
+    colored --blue "[switch] - Checked out branch master"
+
     if [[ -z $(git status --porcelain) ]];
     then
-      colored --yellow "[rebase] - No changes detected, all good"
+      colored --yellow "[switch] - No changes detected, all good"
     else
-      colored --green "[rebase] - The following files have formatting changes:"
+      colored --green "[switch] - The following files have formatting changes:"
       #git status --porcelain
 
-      colored --green "[rebase] - Merging from: ${releasebranch} into: $(git_current_branch)"
+      colored --green "[switch] - Merging from: ${releasebranch} into: $(git_current_branch)"
 
       #git merge origin/"${releasebranch}"
-      git merge "${releasebranch}"
+      git merge --no-ff "${releasebranch}"
 #      git push origin $(git_current_branch)
     fi
   else
-    colored --yellow "[rebase] - The release could not be performed in branch: $(git_current_branch)"
+    colored --yellow "[switch] - The release could not be performed in branch: $(git_current_branch)"
   fi
 }
 
