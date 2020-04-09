@@ -70,7 +70,7 @@ update_release() {
 # shellcheck disable=SC2116
 ##
 deploy() {
-  colored --yellow "[deploy] - About to deploy in branch: $(git_current_branch)"
+  colored --yellow "[Deploy] - About to deploy in branch: $(git_current_branch)"
 
   DEPLOY=""
   IFS=';' # hyphen (;) is set as delimiter
@@ -81,13 +81,17 @@ deploy() {
   IFS=' ' # reset to default value after usage
   DEPLOY=${DEPLOY}"echo 'Done!'"
 
-  colored --blue "[deploy] - ${DEPLOY}"
+  colored --blue "[Deploy] - ${DEPLOY}"
   eval $DEPLOY
 }
 
 # shellcheck disable=SC2046
-rebase() {
-  colored --yellow "[rebase] - About to rebase from branch: $(git_current_branch), is master branch: $(is_master_branch)"
+switch_to() {
+  argv inreleasebranch '--release-branch' "${@:1:$#}"
+
+  [[ ! -z "$inreleasebranch" ]] && releasebranch="${inreleasebranch}" || releasebranch="${RELEASE_BRANCH}"
+
+  colored --yellow "[rebase] - About to rebase from branch: ${releasebranch}, isMaster? : $(is_master_branch)"
 
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
@@ -97,11 +101,13 @@ rebase() {
       colored --yellow "[rebase] - No changes detected, all good"
     else
       colored --green "[rebase] - The following files have formatting changes:"
-      git status --porcelain
-      git merge origin/"${RELEASE_BRANCH}"
+      #git status --porcelain
 
-      colored --green "[rebase] - Merging from: $(git_current_branch) to: ${RELEASE_BRANCH}"
-      git push origin $(git_current_branch)
+      colored --green "[rebase] - Merging from: ${releasebranch} into: $(git_current_branch)"
+
+      #git merge origin/"${releasebranch}"
+      git merge "${releasebranch}"
+#      git push origin $(git_current_branch)
     fi
   else
     colored --yellow "[rebase] - The release could not be performed in branch: $(git_current_branch)"
@@ -119,7 +125,7 @@ __tag__() {
   argv inlabel '--tag-prefix' "${@:1:$#}"
   argv inprofile '--profile' "${@:1:$#}"
 
-  colored --green "[tag] - In label=${inlabel}"
+#  colored --green "[tag] - In label=${inlabel}"
 
   [[ ! -z "$intag" ]] && tag="${intag}" || tag=''
   #[[ ! -z "$inlabel" ]] && fullversion="${inlabel}-${tag}" || fullversion=''
@@ -131,51 +137,51 @@ __tag__() {
   [[ ! -z "$tag" ]] && tag_argv="-DnewVersion=${tag}" || tag_argv='-DremoveSnapshot'
   [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" #|| snapshot_argv="-DnewVersion=$(increment "${tag}")"
 
-  colored --green "[Release] Tag=${tag}"
-  colored --green "[Release] Label=${label}"
-  colored --green "[Release] Tag Label=${tag_argv}"
-  colored --green "[Release] Snapshot=${snapshot}"
-  colored --green "[Release] Version Arg=${snapshot_argv}"
+#  colored --green "[Release] Tag=${tag}"
+#  colored --green "[Release] Label=${label}"
+#  colored --green "[Release] Tag Label=${tag_argv}"
+#  colored --green "[Release] Snapshot=${snapshot}"
+#  colored --green "[Release] Version Arg=${snapshot_argv}"
 
-  # shellcheck disable=SC2154
-  colored --green "[Release] Extra Arg=${tag}"
-  colored --green "[Release] Full version: ${fullversion}"
+#  # shellcheck disable=SC2154
+#  colored --green "[Release] Extra Arg=${tag}"
+#  colored --green "[Release] Full version: ${fullversion}"
 
-  [[ ! -z $(is_tag_exists "${fullversion}") ]] && colored --green "[Release] Following tag: ${fullversion}, already exist" \
+  [[ ! -z $(is_tag_exists "${fullversion}") ]] && colored --green "[Release] tag: ${fullversion}, already exist" \
     && error_exit "Following tag: ${fullversion}, has already existed."
 
-  # Update the versions, removing the snapshots, then create a new tag for the release,
-  # this will start the travis-ci release process.
-  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${tag_argv}" -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
+  # Update the versions, removing the snapshots, then create a new tag for the release, will start release process.
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${tag_argv}" \
+    -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
 
   # tag the release
-  echo "pushing tag ${tag} with command: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${label} -Dmvn.tag.prefix=${inlabel}${inseparator:-} scm:tag"
-  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} "${label}" -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
+#  echo "pushing tag ${tag} with command: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${label}
+#  -Dmvn.tag.prefix=${inlabel}${inseparator:-} scm:tag"
+
+  # Now tag the relased version
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} "${label}" \
+    -Dmvn.tag.prefix="${inlabel}${inseparator:-}" scm:tag
 
   ## No Sync
-  #./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
+  #./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} \
+  #   -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
 
-  # Generate the Github pages ...
-  #javadoc_to_gh_pages
-
-  # deploy tag
-  echo "deploying tag: ${tag}"
   #Temporally fix to manually deploy (Deploy the new release tag)
+  colored --green "[Release] Deploying tagged branch version: (${tag}) into the remote registry."
   deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
 
-  # Update the versions to the next snapshot
-  echo "pushing snapshot ${snapshot}"
-  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${snapshot_argv}" -DgenerateBackupPoms=false \
-    -Dmessage="[skip] updating versions to next development iteration ${snapshot}"
-
-  # deploy tag
-  echo "deploying snapshot: ${tag}"
-  # Temporally fix to manually deploy (Deploy the new snapshot)
-  deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
-
-#  echo "rebasing to master: ${tag}"
   ## Now merge the working tag branch into master & then push the master
-  rebase --release-branch="${RELEASE_BRANCH}"
+  switch_to --release-branch="${RELEASE_BRANCH}"
+
+  # Update the versions to the next snapshot
+  echo "Updating version to next development iteration (${snapshot})"
+  ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${snapshot_argv}" \
+    -DgenerateBackupPoms=false -Dmessage="[CI/CD] Updating version to next development iteration -> ${snapshot}"
+
+  # Temporally fix to manually deploy (Deploy the new snapshot)
+  colored --green "[Release] Pushing snapshot version: (${snapshot}) into branch: $(git_current_branch)"
+  git push origin "$(git_current_branch)"
+#  deploy #"${inprofile}" "${tag}" # Deploy after snapshot version is created
 }
 
 ##
@@ -194,10 +200,10 @@ api() {
     tag="$NEXT_RELEASE"
     export PREV_RELEASE="$NEXT_RELEASE"
   else
-    [[ -f "$(pwd)/.snapshot" ]] && colored --yellow "[api] - Removing : $(pwd)/.snapshot" && rm -v "$(pwd)/.snapshot" && \
-      mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} -DexportVersion=true \
-        && colored --cyan "[api] - POM Snapshot: $(cat $(pwd)/.snapshot)" \
-        || mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} -DexportVersion=true
+    [[ -f "$(pwd)/.snapshot" ]] && colored --yellow "[api] - Removing : $(pwd)/.snapshot" && rm -v "$(pwd)/.snapshot" \
+      && mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} -DexportVersion=true \
+      && colored --cyan "[api] - POM Snapshot: $(cat $(pwd)/.snapshot)" \
+      || mvn -B -q -U clean validate -N help:evaluate ${MVN_SETTINGS:-} -DexportVersion=true
 
     # extract the release version from the pom file
     [[ -f "$(pwd)/.snapshot" ]] && version=$(cat $(pwd)/.snapshot) && version=$(printf '%s\n' "${version//"-SNAPSHOT"/}") \
@@ -221,7 +227,8 @@ api() {
   [[ ! -z "$insnapshot" ]] && snapshot="$insnapshot" || snapshot=$(increment "${tag}")
 
   ## Get starting release process ...
-  __tag__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" --separator="${inseparator}"
+  __tag__ --tag="${tag}" --tag-prefix="${inlabel:-"v"}" --snapshot="${snapshot}" --arg="${invarg:-}" \
+    --separator="${inseparator}"
 }
 
 #Date based versioning
@@ -260,6 +267,15 @@ ts() {
   # shellcheck disable=SC2154
   [[ ! -z "${innextsnapshot}" ]] && snapshot="${innextsnapshot}" #|| snapshot="${y}${sep}${m}${sep}$(($(date '+%d') + 1))-SNAPSHOT"
   __tag__ --tag="${tag}" --tag-prefix="${inlabel:-}" --snapshot="${snapshot:-}" --arg="${invarg:-}"
+}
+
+###
+# Generating gh_pages
+####
+javadoc() {
+  colored --blue "[Javadoc] Generating gh_pages for documentation purposes."
+
+  javadoc_to_gh_pages
 }
 
 help_message () {
@@ -314,7 +330,7 @@ EOF
   done
 }
 
-if [[ $1 =~ ^((--)?((timestamp|ts)|(api|increment)|(help)))$ ]]; then
+if [[ $1 =~ ^((--)?((timestamp|ts)|(api|increment)|(javadoc|doc)|(help)))$ ]]; then
   XCMD="${1}"
   INDEX=2
 else
@@ -369,6 +385,9 @@ case ${XCMD} in
     ;;
   api|--api|--increment|increment)
     XCMD="api"
+    ;;
+  javadoc|--javadoc)
+    XCMD="javadoc"
     ;;
 esac
 

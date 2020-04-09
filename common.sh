@@ -296,6 +296,6 @@ javadoc_to_gh_pages() {
 
   git add "$version"
   git add index.html
-  git commit -m "Automatically updated javadocs for $version"
+  git commit -m "[javadoc] Automatically updated javadocs for $version"
   git push origin gh-pages
 }
