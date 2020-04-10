@@ -89,12 +89,12 @@ deploy() {
 switch_to() {
   argv inreleasebranch '--release-branch' "${@:1:$#}"
 
-  [[ ! -z "$inreleasebranch" ]] && releasebranch="${inreleasebranch}" || releasebranch="${RELEASE_BRANCH}"
+  [[ ! -z "$inreleasebranch" ]] && releasebranch="${inreleasebranch}" || releasebranch="${RELEASE_BRANCH:-release}"
 
   colored --yellow "[switch] - About to rebase from branch: ${releasebranch}, isMaster? : $(is_master_branch)"
 
   git fetch --prune --all # Fetch & prune all
-  git pull origin # Pull from the current origin branch
+  git pull origin $(git_current_branch) --allow-unrelated-histories # Pull from the current origin branch
 
   # Merge the current tagging branch into the master branch
   if ! is_master_branch; then
@@ -102,20 +102,13 @@ switch_to() {
 
     #safe_checkout "master"
     git checkout "master"
-    git pull origin # Pull from the remote origin
-
+    git pull origin --allow-unrelated-histories # Pull from the remote origin
     if [[ -z $(git status --porcelain) ]];
     then
       colored --yellow "[switch] - No changes detected, all good"
     else
-      colored --green "[switch] - The following files have formatting changes:"
-      #git status --porcelain
-
       colored --green "[switch] - Merging from: ${releasebranch} into: $(git_current_branch)"
-
-      #git merge origin/"${releasebranch}"
-      git merge --no-ff "${releasebranch}"
-#      git push origin $(git_current_branch)
+      git merge "${releasebranch}"
     fi
   else
     colored --yellow "[switch] - The release could not be performed in branch: $(git_current_branch)"
@@ -145,26 +138,12 @@ __tag__() {
   [[ ! -z "$tag" ]] && tag_argv="-DnewVersion=${tag}" || tag_argv='-DremoveSnapshot'
   [[ ! -z "$snapshot" ]] && snapshot_argv="-DnewVersion=${snapshot}" #|| snapshot_argv="-DnewVersion=$(increment "${tag}")"
 
-#  colored --green "[Release] Tag=${tag}"
-#  colored --green "[Release] Label=${label}"
-#  colored --green "[Release] Tag Label=${tag_argv}"
-#  colored --green "[Release] Snapshot=${snapshot}"
-#  colored --green "[Release] Version Arg=${snapshot_argv}"
-
-#  # shellcheck disable=SC2154
-#  colored --green "[Release] Extra Arg=${tag}"
-#  colored --green "[Release] Full version: ${fullversion}"
-
   [[ ! -z $(is_tag_exists "${fullversion}") ]] && colored --green "[Release] tag: ${fullversion}, already exist" \
     && error_exit "Following tag: ${fullversion}, has already existed."
 
   # Update the versions, removing the snapshots, then create a new tag for the release, will start release process.
   ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${tag_argv}" \
     -DgenerateBackupPoms=false -Dmessage="prepare release ${tag}" -DpushChanges=false
-
-  # tag the release
-#  echo "pushing tag ${tag} with command: ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} ${label}
-#  -Dmvn.tag.prefix=${inlabel}${inseparator:-} scm:tag"
 
   # Now tag the relased version
   ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} "${label}" \
@@ -179,12 +158,12 @@ __tag__() {
   deploy #"${inprofile}" "${tag}" # Deploy after version tag is created
 
   ## Now merge the working tag branch into master & then push the master
-  switch_to --release-branch="${RELEASE_BRANCH}"
+  switch_to --release-branch="${RELEASE_BRANCH}" --target-branch="master"
 
   # Update the versions to the next snapshot
-  echo "Updating version to next development iteration (${snapshot})"
+  echo "Updating next development iteration (${snapshot})"
   ./mvnw ${MVN_SETTINGS:-} ${MVN_BASHMODE:-} ${MVN_DEBUG:-} ${MVN_VARG:-} versions:set scm:checkin "${snapshot_argv}" \
-    -DgenerateBackupPoms=false -Dmessage="[CI/CD] Updating version to next development iteration -> ${snapshot}"
+    -DgenerateBackupPoms=false -Dmessage="[CI/CD] Updating next development iteration :: (${snapshot})"
 
   # Temporally fix to manually deploy (Deploy the new snapshot)
   colored --green "[Release] Pushing snapshot version: (${snapshot}) into branch: $(git_current_branch)"
